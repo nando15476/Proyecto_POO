@@ -118,3 +118,11 @@ contraseña respectiva de cada persona
 En las siguientes imágenes se muestra el prototipo del proyecto, basado en las capturas de
 pantalla del proyecto original de Algoritmos.
 
+### Inicio de sesión
+![Captura de pantalla 1](https://raw.githubusercontent.com/NoTengoBattery/Proyecto_POO/master/doc/PROT1-1.png)
+
+### Listado de cursos asignados
+![Captura de pantalla 2](https://raw.githubusercontent.com/NoTengoBattery/Proyecto_POO/master/doc/PROT1-2.png)
+
+### Información detallada del curso
+![Captura de pantalla 3](https://raw.githubusercontent.com/NoTengoBattery/Proyecto_POO/master/doc/PROT1-3.png)
