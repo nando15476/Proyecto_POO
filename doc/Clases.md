@@ -41,3 +41,60 @@ pista)`, cambia la contraseña actual del usuario a una nueva. El parámetro `ac
 contraseña en texto plano, esto es porque no se confía en terceras partes para calcular el
 HASH. La contraseña actual, sin embargo, se convierte en HASH tan pronto como se recibe
 para evitar mantenerla en memoria más tiempo del necesario.
+	* `<static>> notificar(String mensaje, String)`, envía una notificación al Miembro.
+
+
+### Clase Alumno (hereda de Miembro)
+Contiene, además de lo mismo que la clase Miembro, información concerniente al Alumno,
+como por ejemplo, la lista de cursos asignados.
+
+* Constructor
+	* `Alumno(String nombre, String apellido, int id)`: El constructor se utiliza
+solamente para crear nuevos alumno manualmente y para recuperarlos de la base de datos,
+dado que la clase Miembro *es inmutable*.
+* Atributos
+	* Heredados de Miembro
+	* `ucorreo: String`, correo de la Universidad (el setter debe utilizar REGEX para
+validar)
+	* `ArrayList cursos: Curso`, una lista con todos los cursos del estudiante.
+* Métodos
+	* Heredado de Miembro
+	* `asignarCurso(Curso curso)`, agrega un nuevo curso al Alumno.
+	* `retirarCurso(Curso curso)`, retira un curso de la lista de Cursos del Alumno.
+
+### Clase Catedratico (hereda de Miembro)
+Contiene, además de lo mismo que la clase Miembro, información concerniente al
+Catedratico, como por ejemplo, la lista de cursos asignados.
+
+* Constructor
+	* `Catedratico(String nombre, String apellido, int id)`: El constructor se utiliza
+solamente para crear nuevos catedrático manualmente y para recuperarlos de la base de
+datos,
+dado que la clase Miembro *es inmutable*.
+* Atributos
+	* Heredados de Miembro
+	* `ucorreo: String`, correo de la Universidad (el setter debe utilizar REGEX para
+validar)
+	* `ArrayList cursos: Curso`, una lista con todos los cursos que imparte el
+catedrático.
+* Métodos
+	* Heredado de Miembro
+	* `asignarCurso(Curso curso)`, agrega un nuevo Curso al Catedratico.
+	* `retirarCurso(Curso curso)`, retira un Curso de la lista de cursos del Catedratico.
+
+### Clase Auxiliar (hereda de Alumno)
+Contiene, además de lo mismo que la clase Alumno, información concerniente al Auxilar. Un
+auxiliar puede tomar rol de Alumno gracias al **polimorfismo**.
+
+* Constructor
+	* `Auxiliar(String nombre, String apellido, int id)`: El constructor se utiliza
+solamente para crear nuevos auxiliares manualmente y para recuperarlos de la base de
+datos, dado que la clase Miembro *es inmutable*.
+* Atributos
+	* Heredados de Alumno
+	* `ArrayList cursosAux: Curso`, una lista de cursos que este Alumno auxilia.
+* Métodos
+	* Heredado de Alumno
+	* `asignarCursoAuxiliar(Curso curso)`, agrega un nuevo Curso al Catedratico.
+	* `retirarCursoAuxiliar(Curso curso)`, retira un Curso de la lista de cursos del
+Catedratico.
