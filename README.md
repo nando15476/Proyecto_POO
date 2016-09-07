@@ -53,4 +53,10 @@ estándar de código del proyecto, haciendo que sea difícil que una persona tra
 solo archivo a la vez.
 
 Sin nada más que agregar, este archivo no se debe modificar por nadie excepto por mí.
-Terminemos este proyect ¡Yá! :)
+Terminemos este proyect ¡Yá!
+ :)
+
+## Dependencias
+
+- Eclipse debe tener instalado el plugin de Maven `M2Eclipse`
+- Conector de MariaDB/MySQL para Java (dependencia de Maven)
