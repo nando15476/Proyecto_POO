@@ -9,7 +9,9 @@ accesorias (como las de acceso a los datos y el controlador de bases de datos).
 
 ## Modelo
 En la siguiente clase se describen los modelos en los que radica el funcionamiento del
-sistema (y están implementados en las tablas de la base de datos)
+sistema (y están implementados en las tablas de la base de datos). Las relaciones tienen
+como eje central la clase Curso y la tabla Curso en la base de datos. Esto es porque Curso
+es con lo que interactúan todos los herederos de Miembro.
 
 ### Clase Miembro
 Contiene toda la información que todo miembro de la Universidad debe brindar a la misma
@@ -98,3 +100,67 @@ datos, dado que la clase Miembro *es inmutable*.
 	* `asignarCursoAuxiliar(Curso curso)`, agrega un nuevo Curso al Catedratico.
 	* `retirarCursoAuxiliar(Curso curso)`, retira un Curso de la lista de cursos del
 Catedratico.
+
+### Clase Tutor (hereda de Alumno)
+Contiene, además de lo mismo que la clase Alumno, información concerniente al Tutor. Un
+tutor puede tomar rol de Alumno gracias al **polimorfismo**. El Tutor podrá asignarse
+cualquier Curso que desee para tutoría, media vez ya lo haya aprobado. En cualquier
+momento puede optar por retirarse el Curso.
+
+* Constructor
+	* `Tutor(String nombre, String apellido, int id)`: El constructor se utiliza
+solamente para crear nuevos tutores manualmente y para recuperarlos de la base de
+datos, dado que la clase Miembro *es inmutable*.
+* Atributos
+	* Heredados de Alumno
+	* `ArrayList cursosTut: Curso`, una lista de cursos que este Alumno auxilia.
+* Métodos
+	* Heredado de Alumno
+	* `asignarCursoTutor(Curso curso)`, agrega un nuevo Curso al Catedratico.
+	* `retirarCursoTutor(Curso curso)`, retira un Curso de la lista de cursos del
+Catedratico.
+
+### Clase Curso
+Esta clase contiene un Curso particular. La relación de la base de datos entre Curso y
+Alumno es de muchos a muchos: un alumno puede asignarse cero, uno o más cursos media vez
+el Curso no sea el mismo. Un curso se define como "el mismo" si su código único es el
+mismo y la sección es la misma o diferente. Lo mismo aplica para la relación Curso y
+Catedratico. En el diagrama UML, la relación entre Alumno o Catedratico y Curso es de
+dependencia, es decir, a cada Alumno le tocará una instancia particular del Curso, aún si
+muchos alumnos comparten el Curso. Esto se debe a que Tutor no tiene porqué tener asignado
+un curso para dar tutoría. Esto obliga a hacer la distinción.
+
+* Constructor
+    * `Curso(String UID, String Nombre, int seccion)`: para que un Curso quede
+plenamente definido como único, debe conocerse su identificador único y su nombre de
+curso.
+* Atributos
+    * `Alumno[] alumnos`, una lista con todos los Alumnos que tienen asignado el Curso en
+la sección específica.
+    * `Catedratico catedratico`, el Catedrático que imparte el curso.
+    * `Tutor[] tutores`, una lista con todos los tutores disponibles para este Curso. En
+el caso particular de Tutores, no se hace distinción por sección, mas esto lo maneja la
+base de datos.
+    * `Auxiliar[] auxiliares`, una lista con los auxiliares del curso de esa sección.
+    * `nombre: String`, nombre del curso.
+    * `uId: String`, identificador único del curso de la Universidad.
+    * `sqlId: long`, identificador único en la base de datos.
+La mayoría de métodos son para administración de la base de datos por parte del
+Administrador.
+* Métodos
+    * `agregarAlumno(Administrador auth, Alumno alumno)`, teniendo un Administrador
+autorizando, permite agregar un Alumno al Curso.
+    * `removerAlumno(Administrador auth, Alumno alumno)`, teniendo un Administrador
+autorizando, permite remover un Alumno al Curso.
+    * `cambiarCatedratico(Administrador auth, Catedratico anterior, Catedratico nuevo)`,
+cambia de catedrático a un Curso.
+    * `agregarAuxiliar(Administrador auth, Auxilar auxiliar)`, teniendo un Administrador
+autorizando, permite agregar un Auxilar al Curso.
+    * `removerAuxiliar(Administrador auth, Auxilar auxiliar)`, teniendo un Administrador
+autorizando, permite remover un Auxilar al Curso.
+    * `<<static>> agregarEnBaseDeDatos(Administrador auth, Curso curso)`, agrega un nuevo
+curso a la base de datos.
+    * `<<static>> removerDeBaseDeDatos(Administrador auth, Curso curso)`, remueve un curso
+a la base de datos.
+    * `<<static>> getDesdeBaseDeDatos(Administrador auth, String uid, int seccion):
+Curso`, recupera un Curso desde la base de datos.
