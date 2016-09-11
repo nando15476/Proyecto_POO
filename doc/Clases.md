@@ -35,6 +35,7 @@ Catedráticos, por lo que no puede incluirse en una clase genérica.
 durante el proceso de registro.
 	* `sqlId: long`, un número que corresponde a un valor generado automáticamente por la
 base de datos y, junto con el `id` permite evitar cambios no autorizados.
+    * `Token token`, un Token que determina la autorización del Miembro.
 * Métodos
 	* `cambiarMailPersonal(@NotNull String mail)`, verifica el correo electrónico y una
 vez verificado, cambia el correo en la base de datos y en el objeto.
@@ -43,7 +44,7 @@ pista)`, cambia la contraseña actual del usuario a una nueva. El parámetro `ac
 contraseña en texto plano, esto es porque no se confía en terceras partes para calcular el
 HASH. La contraseña actual, sin embargo, se convierte en HASH tan pronto como se recibe
 para evitar mantenerla en memoria más tiempo del necesario.
-	* `<static>> notificar(String mensaje, String)`, envía una notificación al Miembro.
+	* `<estático>> notificar(String mensaje, String)`, envía una notificación al Miembro.
 
 
 ### Clase Alumno (hereda de Miembro)
@@ -158,9 +159,52 @@ cambia de catedrático a un Curso.
 autorizando, permite agregar un Auxilar al Curso.
     * `removerAuxiliar(Administrador auth, Auxilar auxiliar)`, teniendo un Administrador
 autorizando, permite remover un Auxilar al Curso.
-    * `<<static>> agregarEnBaseDeDatos(Administrador auth, Curso curso)`, agrega un nuevo
+    * `<<estático>> agregarEnBaseDeDatos(Administrador auth, Curso curso)`, agrega un
+nuevo
 curso a la base de datos.
-    * `<<static>> removerDeBaseDeDatos(Administrador auth, Curso curso)`, remueve un curso
+    * `<<estático>> removerDeBaseDeDatos(Administrador auth, Curso curso)`, remueve un
+curso
 a la base de datos.
-    * `<<static>> getDesdeBaseDeDatos(Administrador auth, String uid, int seccion):
+    * `<<estático>> getDesdeBaseDeDatos(Administrador auth, String uid, int seccion):
 Curso`, recupera un Curso desde la base de datos.
+
+### Clase Administrador (hereda de Miembro)
+La clase Administrador es una clase PHONY, se usa para determinar el rol del
+Administrador. Cualquier Miembro puede solicitar un cambio en información sensible, sin
+embargo, este cambio no se realizará hasta que un Administrador autorizado lo haga
+efectivo. El Administrador está almacenado en la base de datos, pero no es un Miembro.
+Pueden existir más de un Administrador, cada uno con su UID y su contraseña HASH. Si bien
+Administrador hereda de Miembro, tiene ciertas diferencias fundamentales.
+
+* Constructor
+    * `Administrador()`: Genera un Administrador vacío, el Administrador es inválido hasta
+que se autoriza correctamente, por lo tanto, no tiene sentido comenzar creando un objeto
+con información.
+* Atributos
+    * Heredados de Miembro, excepto por el Nombre y los Apellidos.
+    * `String nombreUsuario`, nombre de usuario del Administrador.
+* Métodos
+    * `isAutorizado(): boolean`, determina si el Administrador está autorizado.
+    * `authorize(String username, String password)`, autoriza a un Administrador con su
+nombre de usuario y su contraseña.
+
+### Clase Token
+La clase Token sirve como Entidad Central de Autorización. Cada que se autoriza un
+usuario, el método estático `makeNuevoToken(String)` genera un nuevo Token y lo
+agrega al mapa de la Autoridad Central. Dicho mapa es privado, es central y sirve para
+determinar la validez de un Token. El Token tiene una validez de `TOKEN_TIEMPO_VALIDO`
+segundos desde la última vez que se autorizó una transacción con dicho Token.
+
+* Constructor
+    * `<<privado>> Token(String usersha, String randomsha)`, crea un nuevo Token.
+* Atributos
+    * `shaUsuario: String`, el SHA calculado tomando los datos del usuario, usando el ID
+de SQL como sal.
+    * `shaRandom: String`, un SHA generado aleatoriamente, corresponde al ID del Token.
+    * `<<estático>> Map<String, String>`, mapa de Tokens validados de la Autoridad
+Central.
+* Métodos
+    * `<<estático>> makeNuevoToken(String userHash): Token`, autoriza un nuevo Token para
+el usuario especificado.
+    * `autenticate(): boolean`, autentica un Token contra la Autoridad Central.
+    * `revokeToken()`, revoca un Token.
