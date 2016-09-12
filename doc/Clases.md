@@ -188,6 +188,13 @@ con información.
     * `authorize(String username, String password)`, autoriza a un Administrador con su
 nombre de usuario y su contraseña.
 
+## Controlador
+Estas clases controladores son aquellas que regulan el acceso a las clases Modelo. Por lo
+general, abstraen el Modelo hacia la Vista, aunque no es regla, es lo deseable. La Vista y
+el Controlador, a vaces, pueden tener funcionamiento combinado, haciéndo difícil la
+distinción con precisión arbitraria entre ambas. En esta sección se describen los
+controladores utilitarios.
+
 ### Clase Token
 La clase Token sirve como Entidad Central de Autorización. Cada que se autoriza un
 usuario, el método estático `makeNuevoToken(String)` genera un nuevo Token y lo
@@ -208,3 +215,13 @@ Central.
 el usuario especificado.
     * `autenticate(): boolean`, autentica un Token contra la Autoridad Central.
     * `revokeToken()`, revoca un Token.
+
+# Clase Universidad
+La clase Universidad controla, indexa y supervisa el funcionamiento y la relaciones entre
+los Cursos y los Miembros. La Universidad es la interfaz del Administrador, y funciona
+como canal para las Notificaciones. Universidad, junto con Token y los demás controladores
+mantienen la lógica de negocios, el juego de roles y la autenticación.
+
+- La clase Universidad mantiene relaciones muy complejas con el resto de componentes,
+antes de definirla correctamente, hace falta definir correctamente los modelos. No se
+puede definir Universidad de momento.
