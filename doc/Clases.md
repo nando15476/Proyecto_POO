@@ -44,7 +44,7 @@ pista)`, cambia la contraseña actual del usuario a una nueva. El parámetro `ac
 contraseña en texto plano, esto es porque no se confía en terceras partes para calcular el
 HASH. La contraseña actual, sin embargo, se convierte en HASH tan pronto como se recibe
 para evitar mantenerla en memoria más tiempo del necesario.
-	* `<estático>> notificar(String mensaje, String)`, envía una notificación al Miembro.
+	* `<estático>> notificar(String mensaje, Miembro miembro)`, envía una notificación al Miembro.
 
 
 ### Clase Alumno (hereda de Miembro)
@@ -185,7 +185,7 @@ con información.
     * `String nombreUsuario`, nombre de usuario del Administrador.
 * Métodos
     * `isAutorizado(): boolean`, determina si el Administrador está autorizado.
-    * `authorize(String username, String password)`, autoriza a un Administrador con su
+    * `autorice(String username, String password)`, autoriza a un Administrador con su
 nombre de usuario y su contraseña.
 
 ## Controlador
