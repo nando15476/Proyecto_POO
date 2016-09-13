@@ -13,7 +13,7 @@ sistema (y están implementados en las tablas de la base de datos). Las relacion
 como eje central la clase Curso y la tabla Curso en la base de datos. Esto es porque Curso
 es con lo que interactúan todos los herederos de Miembro.
 
-### Clase Miembro
+### Clase Miembro (Abstracta)
 Contiene toda la información que todo miembro de la Universidad debe brindar a la misma
 para pertenecer a ella y todas las funciones comunes que comparten todos los miembros. De
 esta clase heredan tanto Alumno, como Auxiliar (que hereda de Alumno), Tutor y
