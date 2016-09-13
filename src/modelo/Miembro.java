@@ -25,8 +25,8 @@ public abstract class Miembro {
 
     protected Miembro(final String nombres, final String apellidos, int id)
             throws NoSuchAlgorithmException {
-        m_id=id;
-        m_nombres=nombres;
-        m_apellidos=apellidos;
+        m_id = id;
+        m_nombres = nombres;
+        m_apellidos = apellidos;
     }
 }

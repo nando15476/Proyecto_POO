@@ -36,8 +36,7 @@ public enum MariaDBPool {
 
     static {
         ConnectionPool tmpPool = null;
-        final Scanner scanner = new Scanner(System.in);
-        try {
+        try (Scanner scanner = new Scanner(System.in)) {
             final Class driverClass = Class.forName("org.mariadb.jdbc.Driver");
             final Driver driver = (Driver) driverClass.getConstructor().newInstance();
             DriverManager.registerDriver(driver);
@@ -77,10 +76,28 @@ public enum MariaDBPool {
             LOGGER.log(Level.SEVERE, "La clase instanciada no contiene el método solicitado.", e);
         } catch (final InvocationTargetException e) {
             LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.", e);
-        } finally {
-            scanner.close();
         }
         CONNECTION_POOL = tmpPool;
+    }
+
+    /**
+     * Inicializa la base de datos. Cuando el programa se ejecuta en una computadora que no tiene
+     * la base de datos importada, es necesario crear un nuevo esqueleto para la base de datos.
+     * En este método se define este esqueleto. Para generalizar, en este método se describe la
+     * base de datos por completo.
+     */
+    public static void makeBaseDeDatos() throws SQLException {
+        Connection conexion = getConexion();
+        if (conexion == null) {
+            LOGGER.log(Level.SEVERE,
+                    "No se puede verificar la base de datos sin una conexión " + "válida.");
+        } else {
+            try (Statement declaracion = conexion.createStatement()) {
+                ResultSet resultados = declaracion
+                        .executeQuery("CREATE DATABASE IF NOT EXISTS" + NOMBRE_BASE_DE_DATOS);
+            }
+        }
+
     }
 
     /**
@@ -100,15 +117,5 @@ public enum MariaDBPool {
                     "No se ha podido generar una conexión con la base de datos de MariaDB.", e);
             return null;
         }
-    }
-
-    /**
-     * Inicializa la base de datos. Cuando el programa se ejecuta en una computadora que no tiene
-     * la base de datos importada, es necesario crear un nuevo esqueleto para la base de datos.
-     * En este método se define este esqueleto. Para generalizar, en este método se describe la
-     * base de datos por completo.
-     */
-    public static void makeBaseDeDatos(){
-
     }
 }
