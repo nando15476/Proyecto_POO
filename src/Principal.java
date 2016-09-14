@@ -10,14 +10,13 @@ public class Principal {
      * incializarla, junto con la base de datos y otras operaciones previas.
      */
     public static void main(final String... args) {
-        if (MariaDBPool.getConexion() != null) {
-            LOGGER.log(Level.INFO, "Conexión de la base de datos creada correctamente.");
-            // Verifica y genera el esqueleto de la base de datos
-            try {
-                MariaDBPool.makeBaseDeDatos();
-            } catch (final SQLException e) {
-                LOGGER.log(Level.SEVERE,"No se pudo verificar la base de datos.",e);
-            }
+        try {
+            Class.forName(MariaDBPool.class.getCanonicalName());
+            MariaDBPool.makeBaseDeDatos();
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "No se puede cargar la clase.", e);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "No se puede establecer una conexión con SQL.", e);
         }
     }
 }

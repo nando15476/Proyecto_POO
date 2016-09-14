@@ -30,20 +30,24 @@ public enum MariaDBPool {
     public static final String NOMBRE_POOL = "maria-pool";
     @NonNls
     public static final String NOMBRE_BASE_DE_DATOS = "UVGDB";
+    public static final String DRIVER = "org.mariadb.jdbc.Driver";
     @NonNls
     private static final Logger LOGGER = Logger.getLogger(MariaDBPool.class.getCanonicalName());
+    @Nullable
     private static final ConnectionPool CONNECTION_POOL;
 
     static {
         ConnectionPool tmpPool = null;
-        try (Scanner scanner = new Scanner(System.in)) {
-            final Class driverClass = Class.forName("org.mariadb.jdbc.Driver");
-            final Driver driver = (Driver) driverClass.getConstructor().newInstance();
-            DriverManager.registerDriver(driver);
-            System.out.println("Bienvenido al inicializador de la conexión con MariaDB.");
-            boolean invalido = true;
-            // Repite la petición hasta que las credenciales sean válidas.
-            while (invalido) {
+        boolean invalido = true;
+        while (invalido) {
+            final Scanner scanner = new Scanner(System.in, "UTF-8");
+            try {
+                final Class driverClass = Class.forName(DRIVER);
+                final Driver driver = (Driver) driverClass.getConstructor().newInstance();
+                DriverManager.registerDriver(driver);
+                System.out.println("Bienvenido al inicializador de la conexión con MariaDB.");
+                // Repite la petición hasta que las credenciales sean válidas.
+
                 System.out.println(
                         "Antes de continuar con el programa, ingrese las credenciales para" +
                                 " acceder a MariaDB.");
@@ -52,32 +56,43 @@ public enum MariaDBPool {
                 System.out.println(
                         "Ingrese la contraseña del usuario \"" + username + "\" de MariaDB:");
                 final String clave = scanner.nextLine();
+                //noinspection ObjectAllocationInLoop
                 tmpPool = new ConnectionPool(NOMBRE_POOL, MIN_POOL, MAX_POOL, TAMANO_MAX,
                         TIEMPO_INACTIVO, ULR_BASE_DE_DATOS, username, clave);
-                if (getConexion() == null) {
-                    invalido = true;
-                    LOGGER.log(Level.WARNING,
-                            "La conexión a fallado. Se pedirán de nuevo las credenciales.");
-                } else {
-                    invalido = false;
-                    LOGGER.log(Level.INFO, "¡Conexión realizada exitosamente!");
+                //noinspection resource
+                final Connection con = tmpPool.getConnection();
+                // Con esta aseguramos la existencia de la base de datos
+                try (Statement statement = con.createStatement()) {
+                    try (ResultSet resultSet = statement.executeQuery(
+                            "CREATE DATABASE IF NOT EXISTS " + NOMBRE_BASE_DE_DATOS)) {
+                        LOGGER.log(Level.INFO, "Conexión abierta y funcional.",
+                                resultSet.toString());
+                        // Selecciona la base de datos que vamos a usar
+                        con.setCatalog(NOMBRE_BASE_DE_DATOS);
+                        invalido = false;
+                    }
                 }
+            } catch (final ClassNotFoundException e) {
+                LOGGER.log(Level.SEVERE,
+                        "No se ha encontrado la clase. ¿Se han satisfecho todas las dependencias?",
+                        e);
+            } catch (final InstantiationException e) {
+                LOGGER.log(Level.SEVERE, "La clase no pudo instanciarse.", e);
+            } catch (final IllegalAccessException e) {
+                LOGGER.log(Level.SEVERE, "¡Acceso ilegal!", e);
+            } catch (final SQLException e) {
+                LOGGER.log(Level.SEVERE, "¡Error en el acceso a SQL!", e);
+            } catch (final NoSuchMethodException e) {
+                LOGGER.log(Level.SEVERE, "La clase instanciada no contiene el método solicitado.",
+                        e);
+            } catch (final InvocationTargetException e) {
+                LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.", e);
+            }finally {
+                scanner.close();
             }
-        } catch (final ClassNotFoundException e) {
-            LOGGER.log(Level.SEVERE,
-                    "No se ha encontrado la clase. ¿Se han satisfecho todas las dependencias?", e);
-        } catch (final InstantiationException e) {
-            LOGGER.log(Level.SEVERE, "La clase no pudo instanciarse.", e);
-        } catch (final IllegalAccessException e) {
-            LOGGER.log(Level.SEVERE, "¡Acceso ilegal!", e);
-        } catch (final SQLException e) {
-            LOGGER.log(Level.SEVERE, "¡Error en el acceso a SQL!", e);
-        } catch (final NoSuchMethodException e) {
-            LOGGER.log(Level.SEVERE, "La clase instanciada no contiene el método solicitado.", e);
-        } catch (final InvocationTargetException e) {
-            LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.", e);
         }
         CONNECTION_POOL = tmpPool;
+
     }
 
     /**
@@ -87,14 +102,13 @@ public enum MariaDBPool {
      * base de datos por completo.
      */
     public static void makeBaseDeDatos() throws SQLException {
-        Connection conexion = getConexion();
+        final Connection conexion = getConexion();
         if (conexion == null) {
             LOGGER.log(Level.SEVERE,
-                    "No se puede verificar la base de datos sin una conexión " + "válida.");
+                    "No se puede verificar la base de datos sin una conexión válida.");
         } else {
-            try (Statement declaracion = conexion.createStatement()) {
-                ResultSet resultados = declaracion
-                        .executeQuery("CREATE DATABASE IF NOT EXISTS" + NOMBRE_BASE_DE_DATOS);
+            try (ResultSet resultados = conexion.createStatement().executeQuery("")) {
+
             }
         }
 
