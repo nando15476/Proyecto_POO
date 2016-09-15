@@ -28,7 +28,6 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="Proyecto de Programación Orientada a Objetos" target="1.8" />
-      <module name="Proyecto POO" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>

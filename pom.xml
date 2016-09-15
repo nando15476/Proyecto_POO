@@ -40,6 +40,12 @@
             <artifactId>annotations-java5</artifactId>
             <version>RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
     </dependencies>
     <groupId>gt.edu.uvg</groupId>
     <name>Proyecto de Programación Orientada a Objetos</name>
