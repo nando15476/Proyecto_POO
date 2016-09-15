@@ -1,10 +1,8 @@
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import controlador.MariaDBPool;
+import modelo.Miembro;
 
 public class Principal {
     private static final Logger LOGGER = Logger.getLogger(Principal.class.getCanonicalName());
@@ -15,18 +13,13 @@ public class Principal {
      */
     public static void main(final String... args) {
         try {
-            byte [] lol = MessageDigest.getInstance("SHA-512").digest("LOL".getBytes());
-            System.out.println(lol);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        try {
+            // Inicializa (sin instanciar) el ENUM MariaDBPool, esto ejecuta el inicializador
+            // estático.
             Class.forName(MariaDBPool.class.getCanonicalName());
-            MariaDBPool.makeBaseDeDatos();
+            // Inicializa (sin instanciar) la clase Miembro, esto ejecuta el inicializador estático.
+            Class.forName(Miembro.class.getCanonicalName());
         } catch (ClassNotFoundException e) {
             LOGGER.log(Level.SEVERE, "No se puede cargar la clase.", e);
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "No se puede establecer una conexión con SQL.", e);
         }
 
     }

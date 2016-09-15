@@ -24,15 +24,52 @@ import snaq.db.ConnectionPool;
 @SuppressWarnings("UseOfSystemOutOrSystemErr")
 public enum MariaDBPool {
     ;
+    /**
+     * Tamaño máximo de la pila común de conexiones SQL.
+     */
     public static final int TAMANO_MAX = 10;
+    /**
+     * Tiempo inactivo hasta que una conexión SQL se considere inválida y necesite renovarse.
+     */
     public static final long TIEMPO_INACTIVO = 1000L;
+    /**
+     * Tamaño máximo de conexiones de la pila común.
+     */
     public static final int MAX_POOL = 5;
+    /**
+     * Tamaño mínimo de conexiones de la pila común.
+     */
     public static final int MIN_POOL = 1;
-    public static final String ULR_BASE_DE_DATOS = "jdbc:mariadb://localhost:3306/";
+    /**
+     * URL para establecer la conexión con MariaDB.
+     */
+    @NonNls
+    public static final String URL_SQL = "jdbc:mariadb://localhost:3306/";
+    /**
+     * Nombre de la pila de conexiones comunes.
+     */
+    @NonNls
     public static final String NOMBRE_POOL = "maria-pool";
+    /**
+     * Nombre de la base de datos donde se
+     */
     @NonNls
     public static final String NOMBRE_BASE_DE_DATOS = "UVGDB";
+    /**
+     * Nombre canónico del Driver de MariaDB.
+     */
+    @NonNls
     public static final String DRIVER = "org.mariadb.jdbc.Driver";
+    /**
+     * Nombre de la tabla donde se almacenan los Alumnos.
+     */
+    @NonNls
+    public static final String ALUMNOS = "Alumnos";
+    /**
+     * Nombre de la columna donde se almacenan los nombres de los Alumnos.
+     */
+    @NonNls
+    public static final String ALUMNOS_NOMBRES = "NOMBRES";
     @NonNls
     private static final Logger LOGGER = Logger.getLogger(MariaDBPool.class.getCanonicalName());
     @Nullable
@@ -40,16 +77,18 @@ public enum MariaDBPool {
 
     static {
         ConnectionPool tmpPool = null;
+        @SuppressWarnings({"resource", "IOResourceOpenedButNotSafelyClosed"}) final Scanner
+                scanner = new Scanner(System.in, "UTF-8");
         boolean invalido = true;
         while (invalido) {
-            final Scanner scanner = new Scanner(System.in, "UTF-8");
             try {
+                // Carga la clase e inicializa todos los parámetros estáticos.
                 final Class driverClass = Class.forName(DRIVER);
-                final Driver driver = (Driver) driverClass.getConstructor().newInstance();
+                @SuppressWarnings("unchecked") final Driver driver =
+                        (Driver) driverClass.getConstructor().newInstance();
                 DriverManager.registerDriver(driver);
                 System.out.println("Bienvenido al inicializador de la conexión con MariaDB.");
                 // Repite la petición hasta que las credenciales sean válidas.
-
                 System.out.println(
                         "Antes de continuar con el programa, ingrese las credenciales para" +
                                 " acceder a MariaDB.");
@@ -60,7 +99,7 @@ public enum MariaDBPool {
                 final String clave = scanner.nextLine();
                 //noinspection ObjectAllocationInLoop
                 tmpPool = new ConnectionPool(NOMBRE_POOL, MIN_POOL, MAX_POOL, TAMANO_MAX,
-                        TIEMPO_INACTIVO, ULR_BASE_DE_DATOS, username, clave);
+                        TIEMPO_INACTIVO, URL_SQL, username, clave);
                 //noinspection resource
                 final Connection con = tmpPool.getConnection();
                 // Con esta aseguramos la existencia de la base de datos
@@ -69,8 +108,15 @@ public enum MariaDBPool {
                             "CREATE DATABASE IF NOT EXISTS " + NOMBRE_BASE_DE_DATOS)) {
                         LOGGER.log(Level.INFO, "Conexión abierta y funcional.",
                                 resultSet.toString());
-                        // Selecciona la base de datos que vamos a usar
-                        con.setCatalog(NOMBRE_BASE_DE_DATOS);
+                        /*
+                         * Liberar la pila porque no está conectada a la base de datos, sino sólo
+                         * al servidor. Hace falta conectarse a la base de datos para continuar.
+                         */
+                        tmpPool.release();
+                        //noinspection ObjectAllocationInLoop
+                        tmpPool = new ConnectionPool(NOMBRE_POOL, MIN_POOL, MAX_POOL, TAMANO_MAX,
+                                TIEMPO_INACTIVO, URL_SQL + NOMBRE_BASE_DE_DATOS, username, clave);
+                        LOGGER.log(Level.INFO, "Conexión con la base de datos satisfactoria.");
                         invalido = false;
                     }
                 }
@@ -89,33 +135,10 @@ public enum MariaDBPool {
                         e);
             } catch (final InvocationTargetException e) {
                 LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.", e);
-            } finally {
-                scanner.close();
             }
         }
         CONNECTION_POOL = tmpPool;
-
-    }
-
-    /**
-     * Inicializa la base de datos. Cuando el programa se ejecuta en una computadora que no tiene
-     * la base de datos importada, es necesario crear un nuevo esqueleto para la base de datos.
-     * En este método se define este esqueleto. Para generalizar, en este método se describe la
-     * base de datos por completo.
-     */
-    public static void makeBaseDeDatos() throws SQLException {
-        final Connection conexion = getConexion();
-        if (conexion == null) {
-            LOGGER.log(Level.SEVERE,
-                    "No se puede verificar la base de datos sin una conexión válida.");
-        } else {
-            try (ResultSet resultados = conexion.createStatement()
-                    .executeQuery("CREATE TABLE IF NOT EXISTS `" + NOMBRE_BASE_DE_DATOS + "`" +
-                            ".`Alumnos`")) {
-
-            }
-        }
-
+        scanner.close();
     }
 
     /**
@@ -129,6 +152,7 @@ public enum MariaDBPool {
     @Nullable
     public static Connection getConexion() {
         try {
+            assert CONNECTION_POOL != null;
             return CONNECTION_POOL.getConnection();
         } catch (final SQLException e) {
             LOGGER.log(Level.SEVERE,
