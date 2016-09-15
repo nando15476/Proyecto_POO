@@ -2,8 +2,6 @@
 -- version 4.6.4
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost
--- Generation Time: Sep 15, 2016 at 01:55 AM
 -- Server version: 10.1.17-MariaDB
 -- PHP Version: 5.5.36
 
@@ -24,9 +22,26 @@ USE
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `Administradores`
+--
+
+DROP TABLE IF EXISTS
+  `Administradores`;
+CREATE TABLE `Administradores`(
+  `SQLID` TINYINT(3) UNSIGNED NOT NULL COMMENT 'Clave principal con autoincremento.',
+  `USUARIO` VARBINARY(64) NOT NULL COMMENT 'Nombre de usuario del Administrador',
+  `CLAVE` VARBINARY(64) NOT NULL COMMENT 'HASH de la contraseña actual del Administrador'
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `Alumnos`
 --
 
+DROP TABLE IF EXISTS
+  `Alumnos`;
 CREATE TABLE `Alumnos`(
   `SQLID` MEDIUMINT(7) UNSIGNED NOT NULL COMMENT 'Clave principal con autoincremento.',
   `ID` MEDIUMINT(7) UNSIGNED NOT NULL COMMENT 'Carnet o identificador de la Universidad.',
@@ -36,7 +51,7 @@ CREATE TABLE `Alumnos`(
   `CORREO_USR` INT(20) NOT NULL COMMENT 'Nombre de usuario de correo electrónico personal del Alumno.',
   `CORREO_HST` INT(20) NOT NULL COMMENT 'Host de correo electrónico personal del Alumno.',
   `CLAVE` VARBINARY(64) NOT NULL COMMENT 'HASH de la contraseña actual del Alumno',
-  `CORREO_UVG` INT(20) NOT NULL COMMENT 'Nombre de usuario de correo electrónico de la UVG.'
+  `CORREO_UVG` VARCHAR(20) NOT NULL COMMENT 'Nombre de usuario de correo electrónico de la UVG.'
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COMMENT = 'Tabla que almacena todos los Alumnos.';
 
 
@@ -46,6 +61,8 @@ CREATE TABLE `Alumnos`(
 -- Table structure for table `Alumnos-Cursos-Aprobados`
 --
 
+DROP TABLE IF EXISTS
+  `Alumnos-Cursos-Aprobados`;
 CREATE TABLE `Alumnos-Cursos-Aprobados`(
   `Alumno` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Alumno con su respectivo Curso aprobado.',
   `Curso` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Curso aprobado que se relaciona con el Alumno.'
@@ -58,6 +75,8 @@ CREATE TABLE `Alumnos-Cursos-Aprobados`(
 -- Table structure for table `Alumnos-Cursos-Corrientes`
 --
 
+DROP TABLE IF EXISTS
+  `Alumnos-Cursos-Corrientes`;
 CREATE TABLE `Alumnos-Cursos-Corrientes`(
   `Alumno` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Alumno con su respectivo Curso.',
   `Curso` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Curso que se relaciona con el Alumno.'
@@ -70,6 +89,8 @@ CREATE TABLE `Alumnos-Cursos-Corrientes`(
 -- Table structure for table `Alumnos-Cursos-Reprobados`
 --
 
+DROP TABLE IF EXISTS
+  `Alumnos-Cursos-Reprobados`;
 CREATE TABLE `Alumnos-Cursos-Reprobados`(
   `Alumno` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Alumno con su respectivo Curso reprobado.',
   `Curso` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Curso reprobado que se relaciona con el Alumno.'
@@ -82,6 +103,8 @@ CREATE TABLE `Alumnos-Cursos-Reprobados`(
 -- Table structure for table `Auxiliares-Cursos`
 --
 
+DROP TABLE IF EXISTS
+  `Auxiliares-Cursos`;
 CREATE TABLE `Auxiliares-Cursos`(
   `Auxiliar` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Auxiliar con su respectivo Curso.',
   `Curso` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Curso que se relaciona con el Auxiliar.'
@@ -94,6 +117,8 @@ CREATE TABLE `Auxiliares-Cursos`(
 -- Table structure for table `Catedratico`
 --
 
+DROP TABLE IF EXISTS
+  `Catedratico`;
 CREATE TABLE `Catedratico`(
   `SQLID` MEDIUMINT(7) UNSIGNED NOT NULL COMMENT 'Clave principal con autoincremento.',
   `ID` MEDIUMINT(7) UNSIGNED NOT NULL COMMENT 'Carnet o identificador de la Universidad.',
@@ -103,7 +128,7 @@ CREATE TABLE `Catedratico`(
   `CORREO_USR` INT(20) NOT NULL COMMENT 'Nombre de usuario de correo electrónico personal del Catedrático.',
   `CORREO_HST` INT(20) NOT NULL COMMENT 'Host de correo electrónico personal del Catedrático.',
   `CLAVE` VARBINARY(64) NOT NULL COMMENT 'HASH de la contraseña actual del Alumno',
-  `CORREO_UVG` INT(20) NOT NULL COMMENT 'Nombre de usuario de correo electrónico de la UVG.'
+  `CORREO_UVG` VARCHAR(20) NOT NULL COMMENT 'Nombre de usuario de correo electrónico de la UVG.'
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COMMENT = 'Tabla que almacena todos los Catedráticos.';
 
 
@@ -113,6 +138,8 @@ CREATE TABLE `Catedratico`(
 -- Table structure for table `Cursos`
 --
 
+DROP TABLE IF EXISTS
+  `Cursos`;
 CREATE TABLE `Cursos`(
   `SQLID` MEDIUMINT(8) UNSIGNED NOT NULL COMMENT 'Clave principal con autoincremento.',
   `ID` VARCHAR(8) NOT NULL COMMENT 'Identificador principal del curso.',
@@ -128,6 +155,8 @@ CREATE TABLE `Cursos`(
 -- Table structure for table `Tutores-Cursos`
 --
 
+DROP TABLE IF EXISTS
+  `Tutores-Cursos`;
 CREATE TABLE `Tutores-Cursos`(
   `Tutor` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Tutor con su respectivo Curso.',
   `Curso` MEDIUMINT(9) UNSIGNED NOT NULL COMMENT 'El Curso que se relaciona con el Tutor.'
@@ -137,6 +166,15 @@ CREATE TABLE `Tutores-Cursos`(
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `Administradores`
+--
+ALTER TABLE
+  `Administradores` ADD PRIMARY KEY(`SQLID`) COMMENT 'Clave principal que sirve como índice en SQL.',
+  ADD UNIQUE KEY `UID`(`USUARIO`) COMMENT 'Identificador único del Administrador',
+  ADD UNIQUE KEY `SQLID`(`SQLID`) COMMENT 'Identificador único de la Base de Datos';
+
 
 --
 -- Indexes for table `Alumnos`
@@ -213,6 +251,12 @@ ALTER TABLE
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `Administradores`
+--
+ALTER TABLE
+  `Administradores` MODIFY `SQLID` TINYINT(3) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Clave principal con autoincremento.';
 
 --
 -- AUTO_INCREMENT for table `Alumnos`
