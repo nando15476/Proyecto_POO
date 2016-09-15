@@ -1,3 +1,5 @@
+package controlador;
+
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.Nullable;
 
@@ -87,7 +89,7 @@ public enum MariaDBPool {
                         e);
             } catch (final InvocationTargetException e) {
                 LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.", e);
-            }finally {
+            } finally {
                 scanner.close();
             }
         }
@@ -107,7 +109,9 @@ public enum MariaDBPool {
             LOGGER.log(Level.SEVERE,
                     "No se puede verificar la base de datos sin una conexión válida.");
         } else {
-            try (ResultSet resultados = conexion.createStatement().executeQuery("")) {
+            try (ResultSet resultados = conexion.createStatement()
+                    .executeQuery("CREATE TABLE IF NOT EXISTS `" + NOMBRE_BASE_DE_DATOS + "`" +
+                            ".`Alumnos`")) {
 
             }
         }

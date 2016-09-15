@@ -1,6 +1,10 @@
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import controlador.MariaDBPool;
 
 public class Principal {
     private static final Logger LOGGER = Logger.getLogger(Principal.class.getCanonicalName());
@@ -11,6 +15,12 @@ public class Principal {
      */
     public static void main(final String... args) {
         try {
+            byte [] lol = MessageDigest.getInstance("SHA-512").digest("LOL".getBytes());
+            System.out.println(lol);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        try {
             Class.forName(MariaDBPool.class.getCanonicalName());
             MariaDBPool.makeBaseDeDatos();
         } catch (ClassNotFoundException e) {
@@ -18,5 +28,6 @@ public class Principal {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "No se puede establecer una conexión con SQL.", e);
         }
+
     }
 }

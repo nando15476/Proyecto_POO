@@ -9,6 +9,6 @@ public class Alumno extends Miembro {
 
     protected Alumno(final String nombres, final String apellidos, final int id)
             throws NoSuchAlgorithmException {
-        super(nombres, apellidos, id);
+        super(id);
     }
 }
