@@ -14,6 +14,7 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import excepciones.ErrorIrrecuperable;
 import snaq.db.ConnectionPool;
 
 /**
@@ -60,16 +61,6 @@ public enum MariaDBPool {
      */
     @NonNls
     public static final String DRIVER = "org.mariadb.jdbc.Driver";
-    /**
-     * Nombre de la tabla donde se almacenan los Alumnos.
-     */
-    @NonNls
-    public static final String ALUMNOS = "Alumnos";
-    /**
-     * Nombre de la columna donde se almacenan los nombres de los Alumnos.
-     */
-    @NonNls
-    public static final String ALUMNOS_NOMBRES = "NOMBRES";
     @NonNls
     private static final Logger LOGGER = Logger.getLogger(MariaDBPool.class.getCanonicalName());
     @Nullable
@@ -122,19 +113,21 @@ public enum MariaDBPool {
                 }
             } catch (final ClassNotFoundException e) {
                 LOGGER.log(Level.SEVERE,
-                        "No se ha encontrado la clase. ¿Se han satisfecho todas las dependencias?",
-                        e);
+                        "No se ha encontrado la clase. ¿Se han satisfecho todas las dependencias?");
+                throw new ErrorIrrecuperable(e);
             } catch (final InstantiationException e) {
-                LOGGER.log(Level.SEVERE, "La clase no pudo instanciarse.", e);
+                LOGGER.log(Level.SEVERE, "La clase no pudo instanciarse.");
+                throw new ErrorIrrecuperable(e);
             } catch (final IllegalAccessException e) {
                 LOGGER.log(Level.SEVERE, "¡Acceso ilegal!", e);
             } catch (final SQLException e) {
                 LOGGER.log(Level.SEVERE, "¡Error en el acceso a SQL!", e);
             } catch (final NoSuchMethodException e) {
-                LOGGER.log(Level.SEVERE, "La clase instanciada no contiene el método solicitado.",
-                        e);
+                LOGGER.log(Level.SEVERE, "La clase instanciada no contiene el método solicitado.");
+                throw new ErrorIrrecuperable(e);
             } catch (final InvocationTargetException e) {
-                LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.", e);
+                LOGGER.log(Level.SEVERE, "No se pudo invocar el objetivo.");
+                throw new ErrorIrrecuperable(e);
             }
         }
         CONNECTION_POOL = tmpPool;
