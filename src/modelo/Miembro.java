@@ -16,7 +16,7 @@ import excepciones.NoEsUnNombreRealException;
 
 /**
  * La clase Miembro, del paquete {@link modelo} es el modelo fundamental de las clases
- * {@link Alumno}, {@link Tutor}, {@link Auxiliar}, {@link Administrador} y {@link Catedratico}.
+ * {@link Alumno}, {@link Tutor}, {@link Auxiliar} y {@link Catedratico}.
  * Esta clase define a un miembro de la Universidad, y contiene toda la información que todos los
  * miembros de la Universidad deben brindar para pertenecer a la institución.
  * <p>
@@ -26,10 +26,18 @@ import excepciones.NoEsUnNombreRealException;
  * Base de Datos, el objeto se valida automáticamente.
  * </p>
  * <p>Los objetos inválidos no tienen acceso a solicitar un {@link Token}, y por lo tanto no se
- * puede iniciar sesión con ellos.</p>
+ * puede iniciar sesión con ellos. Los objetos inválidos son mutables (es decir, se pueden
+ * modificar), pero media vez se valide el objeto en la base de datos, el objeto será inmutable.</p>
  */
 @SuppressWarnings("ConstructorWithTooManyParameters")
 public abstract class Miembro {
+    protected static final String YA_VALIDADO_MSG =
+            "No se puede cambiar ningun capmo de un objeto validado.";
+    /**
+     * El nombre de host de la Universidad (al cual pertenecen todos los correos de la U).
+     */
+    @NonNls
+    static final String UNIVERSIDAD_HOST = "uvg.edu.gt";
     /**
      * Con este REGEX se verifican la validez de los nombres de las personas. Un nombre de persona
      * puede contener cualquier caracter en cualquier idioma. Sin embargo, la primera letra debe ser
@@ -37,24 +45,53 @@ public abstract class Miembro {
      * máximo de la base de datos y sólo puede contener un punto al final (para nombres como J.
      * Ulises).
      */
-    public static final Pattern NOMBRE_REGEX = Pattern.compile("(\\p{Lu}\\p{L}*\\.?)$");
-    protected static final Pattern UNICODE_MATCHER = Pattern.compile("\\p{M}");
+    static final Pattern NOMBRE_REGEX = Pattern.compile("(\\p{Lu}\\p{L}*\\.?)$");
     /**
-     * Instancia de {@link EmailValidator} para validar correos electrónicos.
+     * Encuentra todos los aciertos de caracteres UNICODE.
      */
+    static final Pattern UNICODE_MATCHER = Pattern.compile("\\p{M}");
     private final EmailValidator m_emailValidator;
     private final MessageDigest m_messageDigest;
-    protected String m_nombres;
-    protected String m_primerApellido;
-    protected String m_segundoApellido;
-    protected int m_id = -1;
-    private int m_sqlID = -1;
-    private String m_correoHost;
-    private String m_correoUsuario;
-    private String m_correoUniversidad;
+    /**
+     * Un {@code array} de 64 posiciones que representa el SHA-512 de la contraseña de usuario.
+     */
     // Token token;
-    private byte[] clave;
-
+    protected byte[] clave;
+    /**
+     * Nombre del usuario del correo de la Universidad. En este caso, el host es constante y el
+     * mismo para todos los miembros (uvg.edu.gt).
+     */
+    String m_correoUniversidad;
+    /**
+     * Identificador único del Miembro en la Universidad.
+     */
+    int m_id = -1;
+    /**
+     * El Segundo Apellido del Miembro.
+     */
+    String m_segundoApellido;
+    /**
+     * Nombres del Miembro. En este se incluyen todos los nombres del Miembro.
+     */
+    String m_nombres;
+    /**
+     * El Primer Apellido del Miembro.
+     */
+    String m_primerApellido;
+    /**
+     * Identificador único del Miembro en la Base de Datos.
+     */
+    int m_sqlID = -1;
+    /**
+     * Nombre de usuario del correo electrónico personal (lo que va antes de la arroba).
+     */
+    @Nullable
+    private String m_correoUsuario;
+    /**
+     * Host del correo electrónico personal (por ejemplo, gmail.com, yahoo.com, etc.).
+     */
+    @Nullable
+    private String m_correoHost;
 
     /**
      * Genera un nuevo Miembro desde las clases herederas.
@@ -63,148 +100,189 @@ public abstract class Miembro {
         m_emailValidator = EmailValidator.getInstance();
         try {
             m_messageDigest = MessageDigest.getInstance("SHA-512");
-        } catch (NoSuchAlgorithmException e) {
+        } catch (final NoSuchAlgorithmException e) {
             throw new ErrorIrrecuperable(e);
         }
     }
 
     /**
-     * Devuelve el ID del Miembro, si el miembro es inválido devuelve {@code -1}, aún si un ID se
-     * ha configurado previamente.
+     * Devuelve el índice del Miembro en su respectiba tabla en la Base de Datos. Este índice
+     * determina la validez del Miembro.
+     *
+     * @return el índice en la Base de Datos del Miembro o -1 si el miembro no está en la Base de
+     * Datos.
+     */
+    public int getSqlID() {
+        return m_sqlID;
+    }
+
+    /**
+     * @return
+     */
+    public String getCorreoUniversidad() {
+        return m_correoUniversidad;
+    }
+
+    /**
+     * Agrega el correo de la Universidad. En este caso, solo se usa el <b>nombre de usuario</b>,
+     * pues el dominio de la universidad es constante y el mismo para todos los Miembros.
+     *
+     * @param usuarioU nombre de usuario de la Universidad
+     *
+     * @throws NoEsUnCorreoValidoException si el correo de la Universidad no pasa la prueba de
+     *                                     validez.
+     * @throws CambioDenegadoException     si el Miembro ya estaba validado
+     */
+    abstract void setCorreoUniversidad(@NonNls @NotNull String usuarioU)
+            throws NoEsUnCorreoValidoException, CambioDenegadoException;
+
+    /**
+     * Devuelve el ID del Miembro, si es -1 es que no se ha configurado un ID para el Miembro.
      *
      * @return el ID del Miembro
      */
     public int getId() {
-        return (m_sqlID < 0) ? m_id : -1;
+        return m_id;
     }
 
     /**
-     * Configura el ID de un Miembro si no estaba configurado antes, si ya lo estaba, se lanza
-     * una excepción {@link CambioDenegadoException}, que significa que el cambio no puede
-     * realizarse.
+     * Cambia el ID del Miembro. Genera una excepción si el ID es 0, negativo o si el Miembro ya
+     * está validad.
      *
      * @param id el nuevo ID del objeto
      *
-     * @throws CambioDenegadoException si el valor del ID es inválido o si un ID ya ha sido
-     *                                 configurado.
+     * @throws CambioDenegadoException si el valor del ID es inválido o si el Miembro ya está
+     *                                 validado.
      */
     public void setId(final int id) throws CambioDenegadoException {
-        if ((m_id == -1) && (id >= 0)) {
+        if ((m_sqlID == -1) && (id > 0)) {
             m_id = id;
         } else {
             throw new CambioDenegadoException("No se puede cambiar el ID a " + id +
-                    ", o el nuevo valor es inválido o el ID ya se ha configurado anteriormente.");
+                    ". O bien el ID es inválido o el Miembro ya está validado.");
         }
     }
 
     /**
-     * Devuelve los nombres del Miembro si el Miembro está validado o {@code null} si el miembro
-     * no está validado, aún si sus nombres se han configurado previamente.
+     * Devuelve los nombres del Miembro.
      *
      * @return los nombres del Miembro
      */
     @Nullable
     public String getNombres() {
-        return (m_sqlID < 0) ? m_nombres : null;
+        return m_nombres;
     }
 
     /**
-     * Valida los nombres de los Miembros y luego asigna el nombre al Miembro.
+     * Valida un nuevo nombre para el Miembro y luego asigna el nombre al Miembro.
      *
-     * @param nombres los nombres del Miembro
+     * @param nombres los nuevos nombres del Miembro
      *
      * @throws NoEsUnNombreRealException si el nombre parece no ser un nombre válido
+     * @throws CambioDenegadoException   cuando no se puede realizar el cambio de nombres
      */
     public abstract void setNombres(@NonNls @NotNull final String nombres)
             throws NoEsUnNombreRealException, CambioDenegadoException;
 
     /**
-     * Devuelve el primer apellido del Miembro si el Miembro está validado o {@code null} si el
-     * miembro no está validado, aún si sus apellidos se han configurado previamente.
+     * Devuelve el primer apellido del Miembro.
      *
-     * @return devuelve el primer apellido del Miembro
+     * @return el primer apellido del Miembro
      */
     @Nullable
     public String getPrimerApellido() {
-        return (m_sqlID < 0) ? m_primerApellido : null;
+        return m_primerApellido;
     }
 
     /**
-     * Valida el primer apellido de los Miembros y luego asigna el primer apellido al Miembro.
+     * Valida el nuevo primer apellido del Miembro y luego asigna el primer apellido al Miembro.
      *
-     * @param primerApellido el primer apellido del Miembro
+     * @param primerApellido el nuevo primer apellido del Miembro
      *
      * @throws NoEsUnNombreRealException si el primer apellido parece no ser un apellido válido
+     * @throws CambioDenegadoException   si el Miembro ya estaba validado
      */
     public abstract void setPrimerApellido(@NonNls @NotNull final String primerApellido)
             throws NoEsUnNombreRealException, CambioDenegadoException;
 
     /**
-     * Devuelve el segundo apellido del Miembro si el Miembro está validado o {@code null} si el
-     * miembro no está validado, aún si sus apellidos se han configurado previamente.
+     * Devuelve el segundo apellido del Miembro.
      *
-     * @return devuelve el segundo apellido del Miembro
+     * @return el segundo apellido del Miembro
      */
     @Nullable
     public String getSegundoApellido() {
-        return (m_sqlID < 0) ? m_segundoApellido : null;
+        return m_segundoApellido;
     }
 
     /**
-     * Valida el primer apellido de los Miembros y luego asigna el primer apellido al Miembro.
+     * Valida el nuevo segundo apellido del Miembro y luego asigna el segundo apellido al Miembro.
      *
      * @param segundoApellido el primer apellido del Miembro
      *
-     * @throws NoEsUnNombreRealException si el primer apellido parece no ser un apellido válido
+     * @throws NoEsUnNombreRealException si el segundo apellido parece no ser un apellido válido
+     * @throws CambioDenegadoException   si el Miembro ya estaba validado
      */
     public abstract void setSegundoApellido(@NonNls @NotNull final String segundoApellido)
             throws NoEsUnNombreRealException, CambioDenegadoException;
 
     /**
-     * Devuelve el host de correo electrónico del Miembro si el Miembro está validado o {@code
-     * null} si el miembro no está validado, aún si su correo electrónico se ha configurado
-     * previamente.
+     * Devuelve el host de correo electrónico personal del Miembro.
      *
-     * @return devuelve el segundo apellido del Miembro
+     * @return el host de correo electrónico
      */
     @Nullable
     public String getCorreoHost() {
-        return (m_sqlID < 0) ? m_correoHost : null;
+        return m_correoHost;
     }
 
     /**
-     * Valida el primer apellido de los Miembros y luego asigna el primer apellido al Miembro.
+     * Valida el correo electrónico personal del Miembro y luego asigna el Host y el Nombre de
+     * Usuario al Miembro. Tanto el Nombre de Usuario como el Host son {@link Nullable}, es
+     * decir, pueden ser {@code null}. Esto hará que el Miembro no tenga correo electrónico
+     * personal.
      *
      * @param correoHost    host del correo electrónico (como gmail.com o yahoo.com)
      * @param correoUsuario nombre de usuario (la parte que va antes de la arroba)
      *
      * @throws NoEsUnCorreoValidoException cuando no se puede determinar la validez del correo.
      */
-    public void setCorreo(@NonNls final String correoHost, @NonNls final String correoUsuario)
-            throws NoEsUnCorreoValidoException {
-        //noinspection MagicCharacter
-        final String mail = correoUsuario + '@' + correoHost;
-        if (m_emailValidator.isValid(mail)) {
-            m_correoHost = correoHost;
-            m_correoUsuario = correoUsuario;
+    public void setCorreo(@NonNls @Nullable final String correoHost,
+            @NonNls @Nullable final String correoUsuario)
+            throws NoEsUnCorreoValidoException, CambioDenegadoException {
+        if ((correoHost == null) || (correoUsuario == null) || correoHost.isEmpty() ||
+                correoUsuario.isEmpty()) {
+            return;
+        }
+        if (m_sqlID == -1) {
+            //noinspection MagicCharacter
+            final String mail = correoUsuario + '@' + correoHost;
+            if (m_emailValidator.isValid(mail)) {
+                m_correoHost = correoHost;
+                m_correoUsuario = correoUsuario;
+            } else {
+                throw new NoEsUnCorreoValidoException(mail);
+            }
         } else {
-            throw new NoEsUnCorreoValidoException(mail);
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
     /**
-     * Devuelve el nombre de usuario de correo electrónico del Miembro si el Miembro está
-     * validado o {@code null} si el miembro no está validado, aún si su correo electrónico se ha
-     * configurado previamente.
+     * Devuelve el nombre de usuario de correo electrónico personal del Miembro.
      *
      * @return devuelve el segundo apellido del Miembro
      */
     @Nullable
     public String getCorreoUsuario() {
-        return (m_sqlID < 0) ? m_correoUsuario : null;
+        return m_correoUsuario;
     }
 
-    public abstract void makeCorreoU() throws CambioDenegadoException;
-
-    abstract void setCorreoU(@NonNls @NotNull String correo);
+    /**
+     * Genera un nombre de usuario para el correo electrónico de la Universidad.
+     *
+     * @throws CambioDenegadoException     si el Miembro ya estaba validado
+     * @throws NoEsUnCorreoValidoException
+     */
+    public abstract void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException;
 }
