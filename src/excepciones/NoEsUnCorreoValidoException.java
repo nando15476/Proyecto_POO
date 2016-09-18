@@ -11,6 +11,6 @@ public class NoEsUnCorreoValidoException extends Exception {
      * @param mail el e-mail que parce inválido.
      */
     public NoEsUnCorreoValidoException(final String mail) {
-
+        super("El correo electrónico " + mail + " no parece ser un correo electrónico válido.");
     }
 }
