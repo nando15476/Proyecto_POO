@@ -92,8 +92,6 @@ public class Alumno extends Miembro {
         APELLIDO2_LEN = apellido2LenTmp;
     }
 
-    private final Logger m_logger = Logger.getLogger(getClass().getCanonicalName());
-
 
     @Override
     public void setNombres(@NonNls @NotNull final String nombres)
@@ -159,12 +157,26 @@ public class Alumno extends Miembro {
     }
 
     @Override
+    void setCorreoUniversidad(@NonNls @NotNull final String correoUniversidad)
+            throws NoEsUnCorreoValidoException, CambioDenegadoException {
+        if (m_sqlID == -1) {
+            if (Pattern.compile("\\w{3,4}\\d{5,6}$").matcher(correoUniversidad).matches()) {
+                m_correoUniversidad = correoUniversidad;
+            } else {
+                throw new NoEsUnCorreoValidoException(correoUniversidad);
+            }
+        } else {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        }
+    }
+
+    @Override
     public void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException {
         if (m_sqlID == -1) {
             // En español, nuestro apellidos tienen símbolos raros no permitidos en direcciones
             // de correo.
-            String primerA = Normalizer.normalize(m_primerApellido, Form.NFD)
-                    .toLowerCase(Locale.ENGLISH);
+            String primerA =
+                    Normalizer.normalize(m_primerApellido, Form.NFD).toLowerCase(Locale.ENGLISH);
             primerA = UNICODE_MATCHER.matcher(primerA).replaceAll("");
             // Separamos los apellidos como De Leon o De La Cruz para jugar con ellos uno por uno
             final String[] split = primerA.split(" ");
@@ -198,20 +210,6 @@ public class Alumno extends Miembro {
             }
             ucorreo.append(m_id);
             setCorreoUniversidad(ucorreo.toString());
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
-        }
-    }
-
-    @Override
-    void setCorreoUniversidad(@NonNls @NotNull final String usuarioU)
-            throws NoEsUnCorreoValidoException, CambioDenegadoException {
-        if (m_sqlID == -1) {
-            if (Pattern.compile("\\w{3,4}\\d{5,6}$").matcher(usuarioU).matches()) {
-                m_correoUniversidad = usuarioU;
-            } else {
-                throw new NoEsUnCorreoValidoException(usuarioU);
-            }
         } else {
             throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }

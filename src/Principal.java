@@ -3,6 +3,7 @@ import java.util.logging.Logger;
 
 import controlador.MariaDBPool;
 import excepciones.CambioDenegadoException;
+import excepciones.NoEsUnCorreoValidoException;
 import excepciones.NoEsUnNombreRealException;
 import modelo.Alumno;
 
@@ -24,12 +25,15 @@ public class Principal {
         Alumno alumno = new Alumno();
         try {
             alumno.setNombres("José Oever");
-            alumno.setPrimerApellido("Van Dan");
+            alumno.setPrimerApellido("González");
             alumno.setSegundoApellido("Hernández");
+            alumno.setId(14287);
             alumno.makeCorreoU();
         } catch (NoEsUnNombreRealException e) {
             e.printStackTrace();
         } catch (CambioDenegadoException e) {
+            e.printStackTrace();
+        } catch (NoEsUnCorreoValidoException e) {
             e.printStackTrace();
         }
     }

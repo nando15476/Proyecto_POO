@@ -31,6 +31,7 @@ import excepciones.NoEsUnNombreRealException;
  */
 @SuppressWarnings("ConstructorWithTooManyParameters")
 public abstract class Miembro {
+    @SuppressWarnings("JavaDoc")
     protected static final String YA_VALIDADO_MSG =
             "No se puede cambiar ningun capmo de un objeto validado.";
     /**
@@ -55,7 +56,6 @@ public abstract class Miembro {
     /**
      * Un {@code array} de 64 posiciones que representa el SHA-512 de la contraseña de usuario.
      */
-    // Token token;
     protected byte[] clave;
     /**
      * Nombre del usuario del correo de la Universidad. En este caso, el host es constante y el
@@ -106,7 +106,7 @@ public abstract class Miembro {
     }
 
     /**
-     * Devuelve el índice del Miembro en su respectiba tabla en la Base de Datos. Este índice
+     * Devuelve el índice del Miembro en su respectiva tabla en la Base de Datos. Este índice
      * determina la validez del Miembro.
      *
      * @return el índice en la Base de Datos del Miembro o -1 si el miembro no está en la Base de
@@ -115,26 +115,6 @@ public abstract class Miembro {
     public int getSqlID() {
         return m_sqlID;
     }
-
-    /**
-     * @return
-     */
-    public String getCorreoUniversidad() {
-        return m_correoUniversidad;
-    }
-
-    /**
-     * Agrega el correo de la Universidad. En este caso, solo se usa el <b>nombre de usuario</b>,
-     * pues el dominio de la universidad es constante y el mismo para todos los Miembros.
-     *
-     * @param usuarioU nombre de usuario de la Universidad
-     *
-     * @throws NoEsUnCorreoValidoException si el correo de la Universidad no pasa la prueba de
-     *                                     validez.
-     * @throws CambioDenegadoException     si el Miembro ya estaba validado
-     */
-    abstract void setCorreoUniversidad(@NonNls @NotNull String usuarioU)
-            throws NoEsUnCorreoValidoException, CambioDenegadoException;
 
     /**
      * Devuelve el ID del Miembro, si es -1 es que no se ha configurado un ID para el Miembro.
@@ -147,7 +127,7 @@ public abstract class Miembro {
 
     /**
      * Cambia el ID del Miembro. Genera una excepción si el ID es 0, negativo o si el Miembro ya
-     * está validad.
+     * está validado.
      *
      * @param id el nuevo ID del objeto
      *
@@ -218,7 +198,7 @@ public abstract class Miembro {
     /**
      * Valida el nuevo segundo apellido del Miembro y luego asigna el segundo apellido al Miembro.
      *
-     * @param segundoApellido el primer apellido del Miembro
+     * @param segundoApellido el segundo apellido del Miembro
      *
      * @throws NoEsUnNombreRealException si el segundo apellido parece no ser un apellido válido
      * @throws CambioDenegadoException   si el Miembro ya estaba validado
@@ -246,6 +226,7 @@ public abstract class Miembro {
      * @param correoUsuario nombre de usuario (la parte que va antes de la arroba)
      *
      * @throws NoEsUnCorreoValidoException cuando no se puede determinar la validez del correo.
+     * @throws CambioDenegadoException     si el Miembro ya estaba validado
      */
     public void setCorreo(@NonNls @Nullable final String correoHost,
             @NonNls @Nullable final String correoUsuario)
@@ -271,7 +252,7 @@ public abstract class Miembro {
     /**
      * Devuelve el nombre de usuario de correo electrónico personal del Miembro.
      *
-     * @return devuelve el segundo apellido del Miembro
+     * @return el nombre de usuario de correo
      */
     @Nullable
     public String getCorreoUsuario() {
@@ -279,10 +260,34 @@ public abstract class Miembro {
     }
 
     /**
+     * Devuelve el nombre de usuario de correo electrónico de la Universidad del Miembro.
+     *
+     * @return el nombre de usuario de correo
+     */
+    @Nullable
+    public String getCorreoUniversidad() {
+        return m_correoUsuario;
+    }
+
+    /**
+     * Agrega el correo de la Universidad. En este caso, solo se usa el <b>nombre de usuario</b>,
+     * pues el dominio de la universidad es constante y el mismo para todos los Miembros.
+     *
+     * @param correoUniversidad nombre de usuario de la Universidad
+     *
+     * @throws NoEsUnCorreoValidoException si el correo de la Universidad no pasa la prueba de
+     *                                     validez.
+     * @throws CambioDenegadoException     si el Miembro ya estaba validado
+     */
+    abstract void setCorreoUniversidad(@NonNls @NotNull String correoUniversidad)
+            throws NoEsUnCorreoValidoException, CambioDenegadoException;
+
+    /**
      * Genera un nombre de usuario para el correo electrónico de la Universidad.
      *
      * @throws CambioDenegadoException     si el Miembro ya estaba validado
-     * @throws NoEsUnCorreoValidoException
+     * @throws NoEsUnCorreoValidoException si por alguna razón no se puede generar automáticamente
+     *                                     un nombre de usuario.
      */
     public abstract void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException;
 }
