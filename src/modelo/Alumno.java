@@ -9,17 +9,21 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import controlador.MariaDBPool;
 import excepciones.CambioDenegadoException;
 import excepciones.ErrorIrrecuperable;
+import excepciones.NoEsUnCorreoValidoException;
 import excepciones.NoEsUnNombreRealException;
 
 /**
- * Created by notengobattery on 12/09/16.
+ * Modela a un Alumno, hereda de {@link Miembro} y sirve de contenedor para la información
+ * proveniente de la Base de Datos. Para más información, consúltese el Javadoc de {@link Miembro}.
  */
 public class Alumno extends Miembro {
     /**
@@ -94,81 +98,123 @@ public class Alumno extends Miembro {
     @Override
     public void setNombres(@NonNls @NotNull final String nombres)
             throws NoEsUnNombreRealException, CambioDenegadoException {
-        if (nombres.length() > NOMBRE_LEN) {
-            throw new CambioDenegadoException("El nombre es demasiado largo.");
-        }
-        final String[] testList = nombres.split(" ");
-        for (final String s : testList) {
-            // Si el nombre no parece ser un nombre real...
-            if (!NOMBRE_REGEX.matcher(s).matches()) {
-                // Lanza una excepción
-                throw new NoEsUnNombreRealException(s);
+        if (m_sqlID == -1) {
+            if (nombres.length() > NOMBRE_LEN) {
+                throw new CambioDenegadoException("El nombre es demasiado largo.");
             }
+            final String[] testList = nombres.split(" ");
+            for (final String s : testList) {
+                // Si el nombre no parece ser un nombre real...
+                if (!NOMBRE_REGEX.matcher(s).matches()) {
+                    // Lanza una excepción
+                    throw new NoEsUnNombreRealException(s);
+                }
+            }
+            m_nombres = nombres;
+        } else {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
-        m_nombres = nombres;
     }
 
     @Override
     public void setPrimerApellido(@NonNls @NotNull final String primerApellido)
             throws NoEsUnNombreRealException, CambioDenegadoException {
-        if (primerApellido.length() > APELLIDO1_LEN) {
-            throw new CambioDenegadoException("El primer apellido es demasiado largo.");
-        }
-        final String[] testList = primerApellido.split(" ");
-        for (final String s : testList) {
-            // Si el nombre no parece ser un nombre real...
-            if (!NOMBRE_REGEX.matcher(s).matches()) {
-                // Lanza una excepción
-                throw new NoEsUnNombreRealException(s);
+        if (m_sqlID == -1) {
+            if (primerApellido.length() > APELLIDO1_LEN) {
+                throw new CambioDenegadoException("El primer apellido es demasiado largo.");
             }
+            final String[] testList = primerApellido.split(" ");
+            for (final String s : testList) {
+                // Si el nombre no parece ser un nombre real...
+                if (!NOMBRE_REGEX.matcher(s).matches()) {
+                    // Lanza una excepción
+                    throw new NoEsUnNombreRealException(s);
+                }
+            }
+            m_primerApellido = primerApellido;
+        } else {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
-        m_primerApellido = primerApellido;
     }
 
     @Override
     public void setSegundoApellido(@NonNls @NotNull final String segundoApellido)
             throws NoEsUnNombreRealException, CambioDenegadoException {
-        if (segundoApellido.length() > APELLIDO2_LEN) {
-            throw new CambioDenegadoException("El segundo apellido es demasiado largo.");
-        }
-        final String[] testList = segundoApellido.split(" ");
-        for (final String s : testList) {
-            // Si el nombre no parece ser un nombre real...
-            if (!NOMBRE_REGEX.matcher(s).matches()) {
-                // Lanza una excepción
-                throw new NoEsUnNombreRealException(s);
+        if (m_sqlID == -1) {
+            if (segundoApellido.length() > APELLIDO2_LEN) {
+                throw new CambioDenegadoException("El segundo apellido es demasiado largo.");
             }
+            final String[] testList = segundoApellido.split(" ");
+            for (final String s : testList) {
+                // Si el nombre no parece ser un nombre real...
+                if (!NOMBRE_REGEX.matcher(s).matches()) {
+                    // Lanza una excepción
+                    throw new NoEsUnNombreRealException(s);
+                }
+            }
+            m_segundoApellido = segundoApellido;
+        } else {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
-        m_segundoApellido = segundoApellido;
     }
 
     @Override
-    public void makeCorreoU() throws CambioDenegadoException {
-        // En español, nuestro apellidos tienen símbolos raros no permitidos en direcciones
-        // de correo.
-        String primerA = Normalizer.normalize(m_primerApellido, Normalizer.Form.NFD)
-                .toLowerCase(Locale.ENGLISH);
-        primerA = UNICODE_MATCHER.matcher(primerA).replaceAll("");
-        // Separamos los apellidos como De Leon o De La Cruz para jugar con ellos uno por uno
-        final String[] split = primerA.split(" ");
-        final StringBuilder ucorreo = new StringBuilder();
+    public void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException {
+        if (m_sqlID == -1) {
+            // En español, nuestro apellidos tienen símbolos raros no permitidos en direcciones
+            // de correo.
+            String primerA = Normalizer.normalize(m_primerApellido, Form.NFD)
+                    .toLowerCase(Locale.ENGLISH);
+            primerA = UNICODE_MATCHER.matcher(primerA).replaceAll("");
+            // Separamos los apellidos como De Leon o De La Cruz para jugar con ellos uno por uno
+            final String[] split = primerA.split(" ");
+            final StringBuilder ucorreo = new StringBuilder();
         /*
          * En los correos de la U se usan 3 letras si la primera palabra del apellido tiene
          * más o 3 caracteres. Si tiene menos de 3, entonces se utiliza la siguient palabra
          * para ajustar un total de 4 letras.
          */
-        
-        if (m_id == -1) {
-            throw new CambioDenegadoException(
-                    "No se puede generar un correo de la Universidad de un Alumno inválido.");
+            for (int ffor = 0; ffor < split.length; ffor++) {
+                String s = split[ffor];
+                if ((s.length() >= 3) && ((ucorreo.length() + 3) <= 4)) {
+                    ucorreo.append(s.substring(0, 3));
+                    break;
+                } else {
+                    int len;
+                    if (s.length() >= (4 - ucorreo.length())) {
+                        ucorreo.append(s.substring(0, 4 - ucorreo.length()));
+                    } else {
+                        ucorreo.append(s);
+                    }
+                }
+                if (ucorreo.length() >= 3) {
+                    break;
+                }
+            }
+            if (m_id == -1) {
+                throw new CambioDenegadoException(
+                        "No se puede generar un correo de la Universidad para un Alumno cuyo ID" +
+                                " aún no se ha configurado.");
+            }
+            ucorreo.append(m_id);
+            setCorreoUniversidad(ucorreo.toString());
+        } else {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
-        ucorreo.append(m_id);
-        setCorreoU(ucorreo.toString());
     }
 
     @Override
-    void setCorreoU(@NonNls @NotNull final String correo) {
-
+    void setCorreoUniversidad(@NonNls @NotNull final String usuarioU)
+            throws NoEsUnCorreoValidoException, CambioDenegadoException {
+        if (m_sqlID == -1) {
+            if (Pattern.compile("\\w{3,4}\\d{5,6}$").matcher(usuarioU).matches()) {
+                m_correoUniversidad = usuarioU;
+            } else {
+                throw new NoEsUnCorreoValidoException(usuarioU);
+            }
+        } else {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        }
     }
 
 }
