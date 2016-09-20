@@ -7,6 +7,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import excepciones.CambioDenegadoException;
@@ -29,11 +31,15 @@ import excepciones.NoEsUnNombreRealException;
  * puede iniciar sesión con ellos. Los objetos inválidos son mutables (es decir, se pueden
  * modificar), pero media vez se valide el objeto en la base de datos, el objeto será inmutable.</p>
  */
-@SuppressWarnings("ConstructorWithTooManyParameters")
-public abstract class Miembro {
+public abstract class Miembro implements AutoCloseable {
     @SuppressWarnings("JavaDoc")
     protected static final String YA_VALIDADO_MSG =
-            "No se puede cambiar ningun capmo de un objeto validado.";
+            "No se puede cambiar ningun campo de un objeto validado.";
+    /**
+     * 'SELECT FROM '
+     */
+    @NonNls
+    protected static final String SELECT_FROM = "SELECT * FROM ";
     /**
      * El nombre de host de la Universidad (al cual pertenecen todos los correos de la U).
      */
@@ -56,7 +62,7 @@ public abstract class Miembro {
     /**
      * Un {@code array} de 64 posiciones que representa el SHA-512 de la contraseña de usuario.
      */
-    protected byte[] clave;
+    protected byte[] m_clave;
     /**
      * Nombre del usuario del correo de la Universidad. En este caso, el host es constante y el
      * mismo para todos los miembros (uvg.edu.gt).
@@ -65,7 +71,7 @@ public abstract class Miembro {
     /**
      * Identificador único del Miembro en la Universidad.
      */
-    int m_id = -1;
+    int m_identificador = -1;
     /**
      * El Segundo Apellido del Miembro.
      */
@@ -121,8 +127,8 @@ public abstract class Miembro {
      *
      * @return el ID del Miembro
      */
-    public int getId() {
-        return m_id;
+    public int getIdentificador() {
+        return m_identificador;
     }
 
     /**
@@ -134,11 +140,11 @@ public abstract class Miembro {
      * @throws CambioDenegadoException si el valor del ID es inválido o si el Miembro ya está
      *                                 validado.
      */
-    public void setId(final int id) throws CambioDenegadoException {
-        if ((m_sqlID == -1) && (id > 0)) {
-            m_id = id;
+    public void setIdentificador(final int identificador) throws CambioDenegadoException {
+        if ((m_sqlID == -1) && (identificador > 0)) {
+            m_identificador = identificador;
         } else {
-            throw new CambioDenegadoException("No se puede cambiar el ID a " + id +
+            throw new CambioDenegadoException("No se puede cambiar el ID a " + identificador +
                     ". O bien el ID es inválido o el Miembro ya está validado.");
         }
     }
@@ -266,7 +272,8 @@ public abstract class Miembro {
      */
     @Nullable
     public String getCorreoUniversidad() {
-        return m_correoUsuario;
+        //noinspection MagicCharacter
+        return m_correoUniversidad;
     }
 
     /**
@@ -290,4 +297,25 @@ public abstract class Miembro {
      *                                     un nombre de usuario.
      */
     public abstract void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException;
+
+    /**
+     * Recuepera el objeto acutal desde la base de datos, y una vez recuperado de la base de
+     * datos, el objeto se valida. La información previamente configurada en la instancia podría
+     * o no cambiar para coincidir con la base de datos, sin embargo, el ID de la Universidad
+     * está asegurado para no cambiar luego de esta llamada.
+     *
+     * @throws SQLException si las peticiones SQL fallan
+     */
+    public abstract void obtenerDesdeBaseDeDatos() throws SQLException;
+
+
+    @Override
+    public String toString() {
+        return "Miembro{" + "m_clave=" + Arrays.toString(m_clave) + ", m_correoUniversidad='" +
+                m_correoUniversidad + '\'' + ", m_identificador=" + m_identificador +
+                ", m_segundoApellido='" + m_segundoApellido + '\'' + ", m_nombres='" + m_nombres +
+                '\'' + ", m_primerApellido='" + m_primerApellido + '\'' + ", m_sqlID=" + m_sqlID +
+                ", m_correoUsuario='" + m_correoUsuario + '\'' + ", m_correoHost='" + m_correoHost +
+                '\'' + '}';
+    }
 }
