@@ -285,7 +285,7 @@
     <inspection_tool class="AssignmentToStaticFieldFromInstanceMethod" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssignmentUsedAsCondition" enabled="true" level="SERVER PROBLEM" enabled_by_default="true" />
     <inspection_tool class="AutoCloseableResource" enabled="true" level="INFO" enabled_by_default="true">
-      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,MariaDBPool,getConexion" />
+      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,MariaDBPool,getConexion,java.util.concurrent.ConcurrentHashMap,put|remove" />
     </inspection_tool>
     <inspection_tool class="AwaitNotInLoop" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AwaitWithoutCorrespondingSignal" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -723,7 +723,7 @@
     <inspection_tool class="LabeledStatement" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="LambdaParameterHidingMemberVariable" enabled="true" level="INFO" enabled_by_default="true" />
     <inspection_tool class="LambdaParameterNamingConvention" enabled="true" level="TYPO" enabled_by_default="true" />
-    <inspection_tool class="LawOfDemeter" enabled="true" level="SERVER PROBLEM" enabled_by_default="true">
+    <inspection_tool class="LawOfDemeter" enabled="true" level="INFO" enabled_by_default="true">
       <option name="ignoreLibraryCalls" value="true" />
     </inspection_tool>
     <inspection_tool class="LengthOneStringInIndexOf" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -750,7 +750,7 @@
       <option name="m_minLength" value="1" />
       <option name="m_maxLength" value="20" />
     </inspection_tool>
-    <inspection_tool class="LocalVariableOfConcreteClass" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="LocalVariableOfConcreteClass" enabled="false" level="INFO" enabled_by_default="false" />
     <inspection_tool class="LogStatementGuardedByLogCondition" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="LoggerInitializedWithForeignClass" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="loggerClassName" value="org.apache.log4j.Logger,org.slf4j.LoggerFactory,org.apache.commons.logging.LogFactory,java.util.logging.Logger" />
@@ -801,7 +801,6 @@
     <inspection_tool class="MethodOverridesStaticMethod" enabled="true" level="INFO" enabled_by_default="true" />
     <inspection_tool class="MethodParameterType" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MethodReturnAlwaysConstant" enabled="true" level="SERVER PROBLEM" enabled_by_default="true" />
-    <inspection_tool class="MethodReturnOfConcreteClass" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="MethodReturnType" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MisorderedAssertEqualsArgumentsTestNG" enabled="true" level="INFO" enabled_by_default="true" />
     <inspection_tool class="MissingDeprecatedAnnotation" enabled="true" level="WARNING" enabled_by_default="true">
