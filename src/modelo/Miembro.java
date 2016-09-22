@@ -2,106 +2,79 @@ package modelo;
 
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import controlador.IMiembro;
 import excepciones.CambioDenegadoException;
 import excepciones.ErrorIrrecuperable;
 import excepciones.NoEsUnCorreoValidoException;
-import excepciones.NoEsUnNombreRealException;
 
 /**
  * La clase Miembro, del paquete {@link modelo} es el modelo fundamental de las clases
  * {@link Alumno}, {@link Tutor}, {@link Auxiliar} y {@link Catedratico}.
- * Esta clase define a un miembro de la Universidad, y contiene toda la información que todos los
- * miembros de la Universidad deben brindar para pertenecer a la institución.
+ * Esta clase define a un Miembro de la Universidad, y contiene toda la información que todos los
+ * Miembros de la Universidad deben brindar para pertenecer a la institución.
  * <p>
- * Se define como "Miembro Inválido" a cualquier Miembro que no figure en la base de datos. Esto
+ * Se define como "Miembro Inválido" a cualquier Miembro que no figure en la Base de Datos. Esto
  * quiere decir que un objeto Miembro y algún heredero pueden no ser representaciones de objetos
  * en la Base de Datos. Esto es así porque al generar un objeto inválido y luego agregarlo a la
  * Base de Datos, el objeto se valida automáticamente.
  * </p>
  * <p>Los objetos inválidos no tienen acceso a solicitar un {@link Token}, y por lo tanto no se
  * puede iniciar sesión con ellos. Los objetos inválidos son mutables (es decir, se pueden
- * modificar), pero media vez se valide el objeto en la base de datos, el objeto será inmutable.</p>
+ * modificar), pero media vez se valide el objeto en la Base de Datos, el objeto será inmutable.</p>
  */
-public abstract class Miembro implements AutoCloseable {
+public abstract class Miembro implements IMiembro {
     @SuppressWarnings("JavaDoc")
-    protected static final String YA_VALIDADO_MSG =
-            "No se puede cambiar ningun campo de un objeto validado.";
-    /**
-     * 'SELECT FROM '
-     */
+    static final String YA_VALIDADO_MSG = "No se puede cambiar ningun campo de un objeto validado.";
+    /** 'SELECT FROM ' */
     @NonNls
-    protected static final String SELECT_FROM = "SELECT * FROM ";
-    /**
-     * El nombre de host de la Universidad (al cual pertenecen todos los correos de la U).
-     */
+    static final String SELECT_FROM = "SELECT * FROM ";
+    /** El nombre de host de la Universidad (al cual pertenecen todos los correos de la U). */
     @NonNls
     static final String UNIVERSIDAD_HOST = "uvg.edu.gt";
     /**
      * Con este REGEX se verifican la validez de los nombres de las personas. Un nombre de persona
      * puede contener cualquier caracter en cualquier idioma. Sin embargo, la primera letra debe ser
      * mayúscula, no puede contener números ni caracteres especiales, no puede superar el tamaño
-     * máximo de la base de datos y sólo puede contener un punto al final (para nombres como J.
+     * máximo de la Base de Datos y sólo puede contener un punto al final (para nombres como J.
      * Ulises).
      */
     static final Pattern NOMBRE_REGEX = Pattern.compile("(\\p{Lu}\\p{L}*\\.?)$");
-    /**
-     * Encuentra todos los aciertos de caracteres UNICODE.
-     */
+    /** Encuentra todos los aciertos de caracteres UNICODE. */
     static final Pattern UNICODE_MATCHER = Pattern.compile("\\p{M}");
     private final EmailValidator m_emailValidator;
     private final MessageDigest m_messageDigest;
-    /**
-     * Un {@code array} de 64 posiciones que representa el SHA-512 de la contraseña de usuario.
-     */
-    protected byte[] m_clave;
+    /** Un {@code array} de 64 posiciones que representa el SHA-512 de la contraseña de usuario. */
+    transient byte[] m_clave;
     /**
      * Nombre del usuario del correo de la Universidad. En este caso, el host es constante y el
-     * mismo para todos los miembros (uvg.edu.gt).
+     * mismo para todos los Miembros (uvg.edu.gt).
      */
-    String m_correoUniversidad;
-    /**
-     * Identificador único del Miembro en la Universidad.
-     */
-    int m_identificador = -1;
-    /**
-     * El Segundo Apellido del Miembro.
-     */
-    String m_segundoApellido;
-    /**
-     * Nombres del Miembro. En este se incluyen todos los nombres del Miembro.
-     */
-    String m_nombres;
-    /**
-     * El Primer Apellido del Miembro.
-     */
-    String m_primerApellido;
-    /**
-     * Identificador único del Miembro en la Base de Datos.
-     */
+    transient String m_correoUniversidad;
+    /** Identificador único del Miembro en la Universidad. */
+    transient int m_identificador = -1;
+    /** El Segundo Apellido del Miembro. */
+    transient String m_segundoApellido;
+    /** Nombres del Miembro. En este se incluyen todos los nombres del Miembro. */
+    transient String m_nombres;
+    /** El Primer Apellido del Miembro. */
+    transient String m_primerApellido;
+    /** Identificador único del Miembro en la Base de Datos. */
     int m_sqlID = -1;
-    /**
-     * Nombre de usuario del correo electrónico personal (lo que va antes de la arroba).
-     */
+    /** Nombre de usuario del correo electrónico personal (lo que va antes de la arroba). */
     @Nullable
-    private String m_correoUsuario;
-    /**
-     * Host del correo electrónico personal (por ejemplo, gmail.com, yahoo.com, etc.).
-     */
+    private transient String m_correoUsuario;
+    /** Host del correo electrónico personal (por ejemplo, gmail.com, yahoo.com, etc.). */
     @Nullable
-    private String m_correoHost;
+    private transient String m_correoHost;
 
-    /**
-     * Genera un nuevo Miembro desde las clases herederas.
-     */
+    /** Genera un nuevo Miembro desde las clases herederas. */
     protected Miembro() {
         m_emailValidator = EmailValidator.getInstance();
         try {
@@ -111,35 +84,17 @@ public abstract class Miembro implements AutoCloseable {
         }
     }
 
-    /**
-     * Devuelve el índice del Miembro en su respectiva tabla en la Base de Datos. Este índice
-     * determina la validez del Miembro.
-     *
-     * @return el índice en la Base de Datos del Miembro o -1 si el miembro no está en la Base de
-     * Datos.
-     */
+    @Override
     public int getSqlID() {
         return m_sqlID;
     }
 
-    /**
-     * Devuelve el ID del Miembro, si es -1 es que no se ha configurado un ID para el Miembro.
-     *
-     * @return el ID del Miembro
-     */
+    @Override
     public int getIdentificador() {
         return m_identificador;
     }
 
-    /**
-     * Cambia el ID del Miembro. Genera una excepción si el ID es 0, negativo o si el Miembro ya
-     * está validado.
-     *
-     * @param id el nuevo ID del objeto
-     *
-     * @throws CambioDenegadoException si el valor del ID es inválido o si el Miembro ya está
-     *                                 validado.
-     */
+    @Override
     public void setIdentificador(final int identificador) throws CambioDenegadoException {
         if ((m_sqlID == -1) && (identificador > 0)) {
             m_identificador = identificador;
@@ -149,91 +104,31 @@ public abstract class Miembro implements AutoCloseable {
         }
     }
 
-    /**
-     * Devuelve los nombres del Miembro.
-     *
-     * @return los nombres del Miembro
-     */
+    @Override
     @Nullable
     public String getNombres() {
         return m_nombres;
     }
 
-    /**
-     * Valida un nuevo nombre para el Miembro y luego asigna el nombre al Miembro.
-     *
-     * @param nombres los nuevos nombres del Miembro
-     *
-     * @throws NoEsUnNombreRealException si el nombre parece no ser un nombre válido
-     * @throws CambioDenegadoException   cuando no se puede realizar el cambio de nombres
-     */
-    public abstract void setNombres(@NonNls @NotNull final String nombres)
-            throws NoEsUnNombreRealException, CambioDenegadoException;
-
-    /**
-     * Devuelve el primer apellido del Miembro.
-     *
-     * @return el primer apellido del Miembro
-     */
+    @Override
     @Nullable
     public String getPrimerApellido() {
         return m_primerApellido;
     }
 
-    /**
-     * Valida el nuevo primer apellido del Miembro y luego asigna el primer apellido al Miembro.
-     *
-     * @param primerApellido el nuevo primer apellido del Miembro
-     *
-     * @throws NoEsUnNombreRealException si el primer apellido parece no ser un apellido válido
-     * @throws CambioDenegadoException   si el Miembro ya estaba validado
-     */
-    public abstract void setPrimerApellido(@NonNls @NotNull final String primerApellido)
-            throws NoEsUnNombreRealException, CambioDenegadoException;
-
-    /**
-     * Devuelve el segundo apellido del Miembro.
-     *
-     * @return el segundo apellido del Miembro
-     */
+    @Override
     @Nullable
     public String getSegundoApellido() {
         return m_segundoApellido;
     }
 
-    /**
-     * Valida el nuevo segundo apellido del Miembro y luego asigna el segundo apellido al Miembro.
-     *
-     * @param segundoApellido el segundo apellido del Miembro
-     *
-     * @throws NoEsUnNombreRealException si el segundo apellido parece no ser un apellido válido
-     * @throws CambioDenegadoException   si el Miembro ya estaba validado
-     */
-    public abstract void setSegundoApellido(@NonNls @NotNull final String segundoApellido)
-            throws NoEsUnNombreRealException, CambioDenegadoException;
-
-    /**
-     * Devuelve el host de correo electrónico personal del Miembro.
-     *
-     * @return el host de correo electrónico
-     */
+    @Override
     @Nullable
     public String getCorreoHost() {
         return m_correoHost;
     }
 
-    /**
-     * Valida el correo electrónico personal del Miembro y luego asigna el Host y el Nombre de
-     * Usuario al Miembro. Tanto el Nombre de Usuario como el Host son {@link Nullable}, es
-     * decir, pueden ser {@code null}. Esto hará que el Miembro no tenga correo electrónico
-     * personal.
-     *
-     * @param correoHost    host del correo electrónico (como gmail.com o yahoo.com)
-     * @param correoUsuario nombre de usuario (la parte que va antes de la arroba)
-     *
-     * @throws NoEsUnCorreoValidoException cuando no se puede determinar la validez del correo.
-     * @throws CambioDenegadoException     si el Miembro ya estaba validado
-     */
+    @Override
     public void setCorreo(@NonNls @Nullable final String correoHost,
             @NonNls @Nullable final String correoUsuario)
             throws NoEsUnCorreoValidoException, CambioDenegadoException {
@@ -255,59 +150,18 @@ public abstract class Miembro implements AutoCloseable {
         }
     }
 
-    /**
-     * Devuelve el nombre de usuario de correo electrónico personal del Miembro.
-     *
-     * @return el nombre de usuario de correo
-     */
+    @Override
     @Nullable
     public String getCorreoUsuario() {
         return m_correoUsuario;
     }
 
-    /**
-     * Devuelve el nombre de usuario de correo electrónico de la Universidad del Miembro.
-     *
-     * @return el nombre de usuario de correo
-     */
+    @Override
     @Nullable
     public String getCorreoUniversidad() {
         //noinspection MagicCharacter
         return m_correoUniversidad;
     }
-
-    /**
-     * Agrega el correo de la Universidad. En este caso, solo se usa el <b>nombre de usuario</b>,
-     * pues el dominio de la universidad es constante y el mismo para todos los Miembros.
-     *
-     * @param correoUniversidad nombre de usuario de la Universidad
-     *
-     * @throws NoEsUnCorreoValidoException si el correo de la Universidad no pasa la prueba de
-     *                                     validez.
-     * @throws CambioDenegadoException     si el Miembro ya estaba validado
-     */
-    abstract void setCorreoUniversidad(@NonNls @NotNull String correoUniversidad)
-            throws NoEsUnCorreoValidoException, CambioDenegadoException;
-
-    /**
-     * Genera un nombre de usuario para el correo electrónico de la Universidad.
-     *
-     * @throws CambioDenegadoException     si el Miembro ya estaba validado
-     * @throws NoEsUnCorreoValidoException si por alguna razón no se puede generar automáticamente
-     *                                     un nombre de usuario.
-     */
-    public abstract void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException;
-
-    /**
-     * Recuepera el objeto acutal desde la base de datos, y una vez recuperado de la base de
-     * datos, el objeto se valida. La información previamente configurada en la instancia podría
-     * o no cambiar para coincidir con la base de datos, sin embargo, el ID de la Universidad
-     * está asegurado para no cambiar luego de esta llamada.
-     *
-     * @throws SQLException si las peticiones SQL fallan
-     */
-    public abstract void obtenerDesdeBaseDeDatos() throws SQLException;
-
 
     @Override
     public String toString() {

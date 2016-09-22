@@ -142,7 +142,6 @@ public enum MariaDBPool {
      *
      * @return una conexión a SQL
      */
-    @Nullable
     public static Connection getConexion() {
         try {
             assert CONNECTION_POOL != null;
@@ -150,7 +149,7 @@ public enum MariaDBPool {
         } catch (final SQLException e) {
             LOGGER.log(Level.SEVERE,
                     "No se ha podido generar una conexión con la base de datos de MariaDB.", e);
-            return null;
+            throw new AssertionError("No hay conexiones válidas en la Base de Datos.");
         }
     }
 }

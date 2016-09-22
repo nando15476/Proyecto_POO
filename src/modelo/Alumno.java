@@ -14,11 +14,14 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import controlador.IAdministrador;
 import controlador.MariaDBPool;
 import excepciones.CambioDenegadoException;
 import excepciones.ErrorIrrecuperable;
 import excepciones.NoEsUnCorreoValidoException;
 import excepciones.NoEsUnNombreRealException;
+import excepciones.PermisoDenegadoException;
+import excepciones.ValorInvalidoException;
 
 /**
  * Modela a un Alumno, hereda de {@link Miembro} y sirve de contenedor para la información
@@ -28,8 +31,14 @@ public class Alumno extends Miembro {
     /**
      * Capacidad inicial del Multiton.
      */
-    static final int INITIAL_CAPACITY = 15;
+    static final int INITIAL_CAPACITY = 25;
+    /**
+     * Nombre de la columna del ID único de SQL en la Base de Datos.
+     */
     static final String ALUMNOS_SQLID = "SQLID";
+    /**
+     * Nombre de la columna del nombre de usuario de correo personal en la Base de Datos.
+     */
     static final String CORREO_USR = "CORREO_USR";
     /**
      * Nombre de la tabla donde se almacenan los Alumnos.
@@ -54,38 +63,46 @@ public class Alumno extends Miembro {
     /**
      * <p>Longitud máxima permitida para un nombre de una persona miembro de la Universidad.</p>
      * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos, o
-     * es {@code 0} si la base de datos no puede accederse.
+     * es {@code 0} si la Base de Datos no puede accederse.
      */
     static final int NOMBRE_LEN;
     /**
      * <p>Longitud máxima permitida para un apellido de una persona miembro de la Universidad.</p>
      * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos, o
-     * es {@code 0} si la base de datos no puede accederse.
+     * es {@code 0} si la Base de Datos no puede accederse.
      */
     static final int APELLIDO1_LEN;
     /**
      * <p>Longitud máxima permitida para un segundo apellido de una persona miembro de la
      * Universidad.</p>
      * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos, o
-     * es {@code 0} si la base de datos no puede accederse.
+     * es {@code 0} si la Base de Datos no puede accederse.
      */
     static final int APELLIDO2_LEN;
     /**
      * Nombre de la columna del ID en la Base de Datos.
      */
     static final String ALUMNOS_ID = "ID";
+    /**
+     * Nombre de la columna del host de correo personal en la Base de Datos.
+     */
     static final String CORREO_HOST = "CORREO_HST";
+    /**
+     * Nombre de la columna del usuario de correo de la UVG en la Base de Datos.
+     */
     static final String CORREO_UVG = "CORREO_UVG";
+    /**
+     * Nombre de la columna de la contraseña/clave en la Base de Datos.
+     */
     static final String CLAVE = "CLAVE";
-    private static final ConcurrentHashMap<Integer, Alumno> MAPA_VALIDOS_MULTITON =
+    private static final transient ConcurrentHashMap<Integer, Alumno> MAPA_VALIDOS_MULTITON =
             new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
     static {
-        int nombreLenTmp;
-        int apellido1LenTmp;
-        int apellido2LenTmp;
+        final int nombreLenTmp;
+        final int apellido1LenTmp;
+        final int apellido2LenTmp;
         try (Connection conexion = MariaDBPool.getConexion()) {
-            assert conexion != null;
             try (Statement statement = conexion.createStatement();
                  ResultSet result = statement.executeQuery(SELECT_FROM + ALUMNOS)) {
                 final ResultSetMetaData meta = result.getMetaData();
@@ -134,7 +151,7 @@ public class Alumno extends Miembro {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         if (MAPA_VALIDOS_MULTITON.contains(this)) {
             if (m_referencias <= 1) {
                 MAPA_VALIDOS_MULTITON.remove(m_identificador);
@@ -208,7 +225,7 @@ public class Alumno extends Miembro {
     }
 
     @Override
-    void setCorreoUniversidad(@NonNls @NotNull final String correoUniversidad)
+    public void setCorreoUniversidad(@NonNls @NotNull final String correoUniversidad)
             throws NoEsUnCorreoValidoException, CambioDenegadoException {
         if (m_sqlID == -1) {
             if (Pattern.compile("\\w{3,4}\\d{5,6}$").matcher(correoUniversidad).matches()) {
@@ -261,13 +278,14 @@ public class Alumno extends Miembro {
     }
 
     @Override
-    public void obtenerDesdeBaseDeDatos() throws SQLException, UnsupportedOperationException {
+    public void obtenerDesdeBaseDeDatos() throws SQLException, ValorInvalidoException {
         try (final Connection conexion = MariaDBPool.getConexion()) {
-            assert conexion != null;
             try (Statement statement = conexion.createStatement(); ResultSet result = statement
                     .executeQuery(SELECT_FROM + ALUMNOS + " WHERE " + ALUMNOS_ID + "='" +
                             m_identificador + '\'')) {
                 if (result.next()) {
+                    // En teoría cualquier información en la Base de Datos es válida.
+                    m_sqlID = -1;
                     setNombres(result.getString(ALUMNOS_NOMBRES));
                     setPrimerApellido(result.getString(ALUMNOS_APELLIDO1));
                     setSegundoApellido(result.getString(ALUMNOS_APELLIDO2));
@@ -278,17 +296,43 @@ public class Alumno extends Miembro {
                     MAPA_VALIDOS_MULTITON.put(m_identificador, this);
                 }
             } catch (final NoEsUnNombreRealException e) {
-                throw new UnsupportedOperationException(
-                        "El nombre recuperado de la base de datos es inválido.", e);
+                throw new ValorInvalidoException(
+                        "El nombre recuperado de la Base de Datos es inválido.", e);
             } catch (final NoEsUnCorreoValidoException e) {
-                throw new UnsupportedOperationException(
-                        "El correo recuperado de la base de datos es inválido.", e);
+                throw new ValorInvalidoException(
+                        "El correo recuperado de la Base de Datos es inválido.", e);
             } catch (final CambioDenegadoException e) {
-                throw new UnsupportedOperationException(
+                throw new ValorInvalidoException(
                         "Se ha rechazado el cambio de valores para este objeto.", e);
             }
         }
     }
 
+    @Override
+    public void guardarEnBaseDeDatos(final IAdministrador admin)
+            throws SQLException, PermisoDenegadoException {
+        if (admin.isAutorizado()) {
+            final String query =
+                    "INSERT INTO `" + ALUMNOS + "`(`" + ALUMNOS_ID + "`," + '`' + ALUMNOS_NOMBRES +
+                            "`,`" + ALUMNOS_APELLIDO1 + "`," + '`' + ALUMNOS_APELLIDO2 + "`,`" +
+                            CORREO_USR + "`,`" + CORREO_HOST + "`," + '`' + CORREO_UVG +
+                            "`) VALUES (" + getIdentificador() + ",'" + getNombres() + "'," + '\'' +
+                            getPrimerApellido() + "','" + getSegundoApellido() + "','" +
+                            getCorreoUsuario() + "'," + '\'' + getCorreoHost() + "','" +
+                            getCorreoUniversidad() + "') ON DUPLICATE KEY UPDATE " +
+                            ALUMNOS_NOMBRES + "=\'" + getNombres() + "\', " + ALUMNOS_APELLIDO1 +
+                            "=\'" + getPrimerApellido() + "\', " + ALUMNOS_APELLIDO2 + "=\'" +
+                            getSegundoApellido() + "\', " + CORREO_USR + "=\'" +
+                            getCorreoUsuario() + "\', " + CORREO_HOST + "=\'" + getCorreoHost() +
+                            "\', " + CORREO_UVG + "=\'" + getCorreoUniversidad() + '\'';
+            try (final Connection conexion = MariaDBPool.getConexion()) {
+                try (Statement statement = conexion.createStatement()) {
+                    statement.executeUpdate(query);
+                }
+            }
+        } else {
+            throw new PermisoDenegadoException(admin);
+        }
+    }
 
 }
