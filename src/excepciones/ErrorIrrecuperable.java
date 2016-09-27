@@ -12,6 +12,6 @@ public class ErrorIrrecuperable extends Error {
      * @param e excepción que causó el error.
      */
     public ErrorIrrecuperable(final Exception e) {
-        super(e);
+        super("Se ha encontrado un error grave y no se puede continuar con la ejecución.", e);
     }
 }
