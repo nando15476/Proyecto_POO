@@ -285,7 +285,7 @@
     <inspection_tool class="AssignmentToStaticFieldFromInstanceMethod" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AssignmentUsedAsCondition" enabled="true" level="SERVER PROBLEM" enabled_by_default="true" />
     <inspection_tool class="AutoCloseableResource" enabled="true" level="INFO" enabled_by_default="true">
-      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,MariaDBPool,getConexion,java.util.concurrent.ConcurrentHashMap,put|remove,java.sql.Connection,createStatement,java.sql.Statement,executeQuery" />
+      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,MariaDBPool,getConexion,java.util.concurrent.ConcurrentHashMap,put|remove,java.sql.Connection,createStatement,java.sql.Statement,executeQuery|getGeneratedKeys" />
     </inspection_tool>
     <inspection_tool class="AwaitNotInLoop" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AwaitWithoutCorrespondingSignal" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1050,7 +1050,7 @@
     <inspection_tool class="StringBufferReplaceableByString" enabled="true" level="SERVER PROBLEM" enabled_by_default="true" />
     <inspection_tool class="StringBufferToStringInConcatenation" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="StringCompareTo" enabled="false" level="TYPO" enabled_by_default="false" />
-    <inspection_tool class="StringConcatenation" enabled="true" level="WARNING" enabled_by_default="true">
+    <inspection_tool class="StringConcatenation" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="ignoreAsserts" value="true" />
       <option name="ignoreSystemOuts" value="true" />
       <option name="ignoreSystemErrs" value="true" />
