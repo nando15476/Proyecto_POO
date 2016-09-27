@@ -26,8 +26,8 @@ public interface IMiembro extends AutoCloseable {
      * Devuelve el índice del {@link Miembro} en su respectiva tabla en la Base de Datos.
      * Este índice determina la validez del {@link Miembro}.
      *
-     * @return el índice en la Base de Datos del {@link Miembro} o -1 si el {@link Miembro}
-     * no está en la Base de Datos.
+     * @return el índice en la Base de Datos del {@link Miembro} o -1 si el {@link Miembro} no está
+     * en la Base de Datos
      */
     int getSqlID();
 
@@ -46,7 +46,7 @@ public interface IMiembro extends AutoCloseable {
      * @param identificador el nuevo ID del objeto
      *
      * @throws CambioDenegadoException si el valor del ID es inválido o si el {@link Miembro} ya
-     *                                 está validado.
+     *                                 está validado
      */
     void setIdentificador(final int identificador) throws CambioDenegadoException;
 
@@ -127,7 +127,7 @@ public interface IMiembro extends AutoCloseable {
      * @param correoHost    host del correo electrónico (como gmail.com o yahoo.com)
      * @param correoUsuario nombre de usuario (la parte que va antes de la arroba)
      *
-     * @throws NoEsUnCorreoValidoException cuando no se puede determinar la validez del correo.
+     * @throws NoEsUnCorreoValidoException cuando no se puede determinar la validez del correo
      * @throws CambioDenegadoException     si el {@link Miembro} ya estaba validado
      */
     void setCorreo(@NonNls @Nullable final String correoHost,
@@ -159,7 +159,7 @@ public interface IMiembro extends AutoCloseable {
      * @param correoUniversidad nombre de usuario de la Universidad
      *
      * @throws NoEsUnCorreoValidoException si el correo de la Universidad no pasa la prueba de
-     *                                     validez.
+     *                                     validez
      * @throws CambioDenegadoException     si el {@link Miembro} ya estaba validado
      */
     void setCorreoUniversidad(@NonNls @NotNull String correoUniversidad)
@@ -170,31 +170,26 @@ public interface IMiembro extends AutoCloseable {
      *
      * @throws CambioDenegadoException     si el {@link Miembro} ya estaba validado
      * @throws NoEsUnCorreoValidoException si por alguna razón no se puede generar automáticamente
-     *                                     un nombre de usuario.
+     *                                     un nombre de usuario
      */
     void makeCorreoU() throws CambioDenegadoException, NoEsUnCorreoValidoException;
 
     /**
-     * Recuepera el objeto acutal desde la Base de Datos, y una vez recuperado de la base de
-     * datos, el objeto se valida. La información previamente configurada en la instancia podría
-     * o no cambiar para coincidir con la Base de Datos, sin embargo, el ID de la Universidad
-     * está asegurado para no cambiar luego de esta llamada.
-     *
-     * @throws SQLException           si las peticiones SQL fallan
-     * @throws ValorInvalidoException si algún valor de la Base de Datos es inválido
-     */
-    void obtenerDesdeBaseDeDatos() throws SQLException, ValorInvalidoException;
-
-    /**
      * Guarda el objeto acutal en la Base de Datos, y una vez almacenado en la base de
-     * datos, el objeto se valida.
+     * datos, el objeto se sincroniza de nuevo con la base de datos, es decir, se valida.
      *
-     * @param admin Un {@link IAdministrador} con autoriadad para modificar la base de datos.
+     * @param admin Un {@link IAdministrador} con autoriadad para modificar la base de datos
      *
-     * @throws SQLException             cuando la petición SQL falla.
+     * @throws SQLException             cuando la petición SQL falla
      * @throws PermisoDenegadoException cuando el {@link IAdministrador} no tiene atoridad para
-     *                                  realizar la acción.
+     *                                  realizar la acción
+     * @throws ValorInvalidoException   cuando cualquier valor del Miembro recuperado es inválido.
+     *                                  Esto implica un grave error pues la única fomrma de
+     *                                  solucionarlo es corregir la base de datos
      */
     void guardarEnBaseDeDatos(final IAdministrador admin)
-            throws SQLException, PermisoDenegadoException;
+            throws SQLException, PermisoDenegadoException, ValorInvalidoException,
+            CambioDenegadoException;
+
+    boolean isValido();
 }
