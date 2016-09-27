@@ -45,7 +45,7 @@ public enum MariaDBPool {
      * URL para establecer la conexión con MariaDB.
      */
     @NonNls
-    public static final String URL_SQL = "jdbc:mariadb://localhost:3306/";
+    public static final String URL_SQL = "jdbc:mariadb://localhost/";
     /**
      * Nombre de la pila de conexiones comunes.
      */
