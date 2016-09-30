@@ -18,8 +18,8 @@ import excepciones.ErrorIrrecuperable;
 import snaq.db.ConnectionPool;
 
 /**
- * La clase MariaDBPool inicializa una {@link Connection} (conexión) a la base de datos de MariaDB.
- * Esta clase está delegada desde {@link vista}, dado que la conexión a la base de datos es
+ * La clase MariaDBPool inicializa una {@link Connection} (conexión) a la Base de Datos de MariaDB.
+ * Esta clase está delegada desde {@link vista}, dado que la conexión a la Base de Datos es
  * prioridad sobre la dispocisión de esta clase. Esta clase es una clase utilitaria.
  */
 @SuppressWarnings("UseOfSystemOutOrSystemErr")
@@ -28,39 +28,39 @@ public enum MariaDBPool {
     /**
      * Tamaño máximo de la pila común de conexiones SQL.
      */
-    public static final int TAMANO_MAX = 10;
+    private static final int TAMANO_MAX = 10;
     /**
      * Tiempo inactivo hasta que una conexión SQL se considere inválida y necesite renovarse.
      */
-    public static final long TIEMPO_INACTIVO = 1000L;
+    private static final long TIEMPO_INACTIVO = 1000L;
     /**
      * Tamaño máximo de conexiones de la pila común.
      */
-    public static final int MAX_POOL = 5;
+    private static final int MAX_POOL = 5;
     /**
      * Tamaño mínimo de conexiones de la pila común.
      */
-    public static final int MIN_POOL = 1;
+    private static final int MIN_POOL = 1;
     /**
      * URL para establecer la conexión con MariaDB.
      */
     @NonNls
-    public static final String URL_SQL = "jdbc:mariadb://localhost/";
+    private static final String URL_SQL = "jdbc:mariadb://localhost/";
     /**
      * Nombre de la pila de conexiones comunes.
      */
     @NonNls
-    public static final String NOMBRE_POOL = "maria-pool";
+    private static final String NOMBRE_POOL = "maria-pool";
     /**
-     * Nombre de la base de datos donde se
+     * Nombre de la Base de Datos donde se
      */
     @NonNls
-    public static final String NOMBRE_BASE_DE_DATOS = "UVGDB";
+    private static final String NOMBRE_BASE_DE_DATOS = "UVGDB";
     /**
      * Nombre canónico del Driver de MariaDB.
      */
     @NonNls
-    public static final String DRIVER = "org.mariadb.jdbc.Driver";
+    private static final String DRIVER = "org.mariadb.jdbc.Driver";
     @NonNls
     private static final Logger LOGGER = Logger.getLogger(MariaDBPool.class.getCanonicalName());
     @Nullable
@@ -93,21 +93,24 @@ public enum MariaDBPool {
                         TIEMPO_INACTIVO, URL_SQL, username, clave);
                 //noinspection resource
                 final Connection con = tmpPool.getConnection();
-                // Con esta aseguramos la existencia de la base de datos
+                // Con esta aseguramos la existencia de la Base de Datos
                 try (Statement statement = con.createStatement()) {
                     try (ResultSet resultSet = statement.executeQuery(
                             "CREATE DATABASE IF NOT EXISTS " + NOMBRE_BASE_DE_DATOS)) {
                         LOGGER.log(Level.INFO, "Conexión abierta y funcional.",
                                 resultSet.toString());
                         /*
-                         * Liberar la pila porque no está conectada a la base de datos, sino sólo
-                         * al servidor. Hace falta conectarse a la base de datos para continuar.
+                         * Liberar la pila porque no está conectada a la Base de Datos, sino sólo
+                         * al servidor. Hace falta conectarse a la Base de Datos para continuar.
                          */
                         tmpPool.release();
                         //noinspection ObjectAllocationInLoop
                         tmpPool = new ConnectionPool(NOMBRE_POOL, MIN_POOL, MAX_POOL, TAMANO_MAX,
-                                TIEMPO_INACTIVO, URL_SQL + NOMBRE_BASE_DE_DATOS, username, clave);
-                        LOGGER.log(Level.INFO, "Conexión con la base de datos satisfactoria.");
+                                TIEMPO_INACTIVO,
+                                URL_SQL + NOMBRE_BASE_DE_DATOS + "?useServerPrepStmts=true",
+                                username, clave);
+                        // Permitir uso de Prepared Statement
+                        LOGGER.log(Level.INFO, "Conexión con la Base de Datos satisfactoria.");
                         invalido = false;
                     }
                 }
@@ -148,7 +151,7 @@ public enum MariaDBPool {
             return CONNECTION_POOL.getConnection();
         } catch (final SQLException e) {
             LOGGER.log(Level.SEVERE,
-                    "No se ha podido generar una conexión con la base de datos de MariaDB.", e);
+                    "No se ha podido generar una conexión con la Base de Datos de MariaDB.", e);
             throw new AssertionError("No hay conexiones válidas en la Base de Datos.");
         }
     }

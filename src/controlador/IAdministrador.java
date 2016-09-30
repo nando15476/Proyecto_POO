@@ -10,7 +10,6 @@ import modelo.Administrador;
  * Además utilizar la interfaz en lugar de la clase concreta <b>prohibe</b> exitosamente la
  * creación arbitraria de objetos {@link Administrador}.
  */
-@SuppressWarnings("InterfaceWithOnlyOneDirectInheritor")
 public interface IAdministrador {
     boolean isAutorizado();
 }

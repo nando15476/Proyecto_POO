@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -17,6 +18,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import controlador.IAdministrador;
+import controlador.IMiembro;
 import controlador.MariaDBPool;
 import excepciones.CambioDenegadoException;
 import excepciones.ErrorIrrecuperable;
@@ -33,88 +35,90 @@ public class Alumno extends Miembro {
     /**
      * Capacidad inicial del Multiton.
      */
-    static final int INITIAL_CAPACITY = 25;
+    private static final int INITIAL_CAPACITY = 25;
     /**
      * Nombre de la columna del ID único de SQL en la Base de Datos.
      */
-    static final String ALUMNOS_SQLID = "SQLID";
+    private static final String ALUMNOS_SQLID = "SQLID";
     /**
      * Nombre de la columna del nombre de usuario de correo personal en la Base de Datos.
      */
-    static final String CORREO_USR = "CORREO_USR";
+    private static final String CORREO_USR = "CORREO_USR";
     /**
      * Nombre de la tabla donde se almacenan los Alumnos.
      */
     @NonNls
-    static final String ALUMNOS = "Alumnos";
+    private static final String ALUMNOS = "Alumnos";
     /**
      * Nombre de la columna donde se almacenan los nombres de los Alumnos.
      */
     @NonNls
-    static final String ALUMNOS_NOMBRES = "NOMBRES";
+    private static final String ALUMNOS_NOMBRES = "NOMBRES";
     /**
      * Nombre de la columna donde se almacena el primer apellido de los Alumnos.
      */
     @NonNls
-    static final String ALUMNOS_APELLIDO1 = "APELLIDO1";
+    private static final String ALUMNOS_APELLIDO1 = "APELLIDO1";
     /**
      * Nombre de la columna donde se almacena el segundo apellido de los Alumnos.
      */
     @NonNls
-    static final String ALUMNOS_APELLIDO2 = "APELLIDO2";
+    private static final String ALUMNOS_APELLIDO2 = "APELLIDO2";
     /**
      * <p>Longitud máxima permitida para un nombre de una persona miembro de la Universidad.</p>
-     * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos, o
-     * es {@code 0} si la Base de Datos no puede accederse.
+     * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos.
      */
-    static final int NOMBRE_LEN;
+    private static final int NOMBRE_LEN;
     /**
-     * <p>Longitud máxima permitida para un apellido de una persona miembro de la Universidad.</p>
-     * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos, o
-     * es {@code 0} si la Base de Datos no puede accederse.
+     * <p>Longitud máxima permitida para un primer apellido de una persona miembro de la
+     * Universidad.</p>
+     * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos.
      */
-    static final int APELLIDO1_LEN;
+    private static final int APELLIDO1_LEN;
     /**
      * <p>Longitud máxima permitida para un segundo apellido de una persona miembro de la
      * Universidad.</p>
-     * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos, o
-     * es {@code 0} si la Base de Datos no puede accederse.
+     * <b>¡ADVERTENCIA!</b>: Este valor coincide con el valor establecido en la Base de Datos.
      */
-    static final int APELLIDO2_LEN;
+    private static final int APELLIDO2_LEN;
     /**
      * Nombre de la columna del ID en la Base de Datos.
      */
-    static final String ALUMNOS_ID = "ID";
+    private static final String ALUMNOS_ID = "ID";
     /**
      * Nombre de la columna del host de correo personal en la Base de Datos.
      */
-    static final String CORREO_HOST = "CORREO_HST";
+    private static final String CORREO_HOST = "CORREO_HST";
     /**
      * Nombre de la columna del usuario de correo de la UVG en la Base de Datos.
      */
-    static final String CORREO_UVG = "CORREO_UVG";
+    private static final String CORREO_UVG = "CORREO_UVG";
     /**
      * Nombre de la columna de la contraseña/clave en la Base de Datos.
      */
-    static final String CLAVE = "CLAVE";
+    private static final String CLAVE = "CLAVE";
+    // Mapa del Multitón
     private static final transient ConcurrentHashMap<Integer, Alumno> MAPA_VALIDOS_MULTITON =
             new ConcurrentHashMap<>(INITIAL_CAPACITY);
+    // Logger :v
     private static final Logger LOGGER = Logger.getLogger(Alumno.class.getCanonicalName());
-    private static final String HA_CAMBIADO_EXITOSAMENTE = " ha cambiado exitosamente.";
-    private static final String EL_OBJETO = "El objeto ";
-    private static final String WHERE = " WHERE ";
+    @SuppressWarnings("HardcodedFileSeparator")
+    private static final Pattern CORREO_ALUMNO_REGEX = Pattern.compile(
+            "\\w{3,4}\\d{" + CORREO_UVG_DIGITOS + ',' + CORREO_UVG_DIGITOS + 1 + "}$");
 
     static {
         final int nombreLenTmp;
         final int apellido1LenTmp;
         final int apellido2LenTmp;
         try (Connection conexion = MariaDBPool.getConexion()) {
+            // Uso de PreparedStatement
             try (Statement statement = conexion.createStatement();
-                 ResultSet result = statement.executeQuery(SELECT_FROM + ALUMNOS)) {
+                 ResultSet result = statement.executeQuery("SELECT * FROM " + ALUMNOS)) {
                 final ResultSetMetaData meta = result.getMetaData();
                 nombreLenTmp = meta.getColumnDisplaySize(result.findColumn(ALUMNOS_NOMBRES));
                 apellido1LenTmp = meta.getColumnDisplaySize(result.findColumn(ALUMNOS_APELLIDO1));
                 apellido2LenTmp = meta.getColumnDisplaySize(result.findColumn(ALUMNOS_APELLIDO2));
+
             } catch (final SQLException e) {
                 throw new ErrorIrrecuperable(e);
             }
@@ -134,62 +138,13 @@ public class Alumno extends Miembro {
      *
      * @param id ID para el alumno
      */
-    protected Alumno(final int id) {
+    private Alumno(final int id) {
         m_identificador = id;
         try {
             obtenerDesdeBaseDeDatos();
-        } catch (SQLException | ValorInvalidoException e) {
-            LOGGER.log(Level.INFO, EL_OBJETO + hashCode() + " no se pudo recuperar.", e);
-        }
-    }
-
-    @Override
-    protected void obtenerDesdeBaseDeDatos() throws SQLException, ValorInvalidoException {
-        LOGGER.log(Level.INFO,
-                "A punto de recuperar desde la base de datos para el objeto " + hashCode() + '.');
-        try (final Connection conexion = MariaDBPool.getConexion()) {
-            final String q;
-            // Si el objeto está validado...
-            if (m_sqlID == -1) {
-                // Usar el Identificador de la Universidad para obtener la información
-                q = SELECT_FROM + ALUMNOS + WHERE + ALUMNOS_ID + "='" + m_identificador + '\'';
-            } else {
-                // Usar el Identificador de SQL para obtener la información
-                q = SELECT_FROM + ALUMNOS + WHERE + ALUMNOS_SQLID + "='" + m_sqlID + '\'';
-            }// Si no
-            try (Statement statement = conexion.createStatement();
-                 ResultSet result = statement.executeQuery(q)) {
-                if (result.next()) {
-                    // En teoría cualquier información en la Base de Datos es válida.
-                    invalidar();
-                    setNombres(result.getString(ALUMNOS_NOMBRES));
-                    setPrimerApellido(result.getString(ALUMNOS_APELLIDO1));
-                    setSegundoApellido(result.getString(ALUMNOS_APELLIDO2));
-                    setCorreo(result.getString(CORREO_HOST), result.getString(CORREO_USR));
-                    setCorreoUniversidad(result.getString(CORREO_UVG));
-                    setIdentificador(result.getInt(ALUMNOS_ID));
-                    m_sqlID = result.getInt(ALUMNOS_SQLID);
-                    m_clave = result.getBytes(CLAVE);
-                    MAPA_VALIDOS_MULTITON.put(m_identificador, this);
-                    LOGGER.log(Level.INFO, "Se ha agregado " + hashCode() + " al multitón.");
-                } else {
-                    LOGGER.log(Level.WARNING, "No se ha encontrado el objeto " + hashCode() +
-                            " en la base de datos. Verifique que el objeto exista.");
-
-                }
-            } catch (final NoEsUnNombreRealException e) {
-                throw new ValorInvalidoException(
-                        "El nombre recuperado de la Base de Datos es inválido.", e);
-            } catch (final NoEsUnCorreoValidoException e) {
-                throw new ValorInvalidoException(
-                        "El correo recuperado de la Base de Datos es inválido.", e);
-            } catch (final CambioDenegadoException e) {
-                throw new ValorInvalidoException(
-                        "Se ha rechazado el cambio de valores para este objeto.", e);
-            } catch (final SQLException e) {
-                // Invalidar el objeto y borrar la clave actual
-                invalidar();
-            }
+        } catch (ValorInvalidoException e) {
+            LOGGER.log(Level.INFO,
+                    "El Alumno con ID " + id + " no parece estar en la Base de Datos", e);
         }
     }
 
@@ -199,13 +154,16 @@ public class Alumno extends Miembro {
             m_sqlID = -1;
             MAPA_VALIDOS_MULTITON.remove(m_identificador);
             m_clave = CLAVE_NOOP;
+            // TODO Remover el Token
         }
     }
 
     @Override
     public void setNombres(@NonNls @NotNull final String nombres)
             throws NoEsUnNombreRealException, CambioDenegadoException {
-        if (m_sqlID == -1) {
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        } else {
             if (nombres.length() > NOMBRE_LEN) {
                 throw new CambioDenegadoException("El nombre es demasiado largo.");
             }
@@ -213,23 +171,19 @@ public class Alumno extends Miembro {
             for (final String s : testList) {
                 // Si el nombre no parece ser un nombre real...
                 if (!NOMBRE_REGEX.matcher(s).matches()) {
-                    final NoEsUnNombreRealException e = new NoEsUnNombreRealException(s);
-                    // Lanza una excepción
-                    LOGGER.log(Level.SEVERE, "Nombre inválido.", e);
-                    throw e;
+                    throw new NoEsUnNombreRealException(s);
                 }
             }
             m_nombres = nombres;
-            LOGGER.log(Level.INFO, "El nombre de " + hashCode() + HA_CAMBIADO_EXITOSAMENTE);
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
     @Override
     public void setPrimerApellido(@NonNls @NotNull final String primerApellido)
             throws NoEsUnNombreRealException, CambioDenegadoException {
-        if (m_sqlID == -1) {
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        } else {
             if (primerApellido.length() > APELLIDO1_LEN) {
                 throw new CambioDenegadoException("El primer apellido es demasiado largo.");
             }
@@ -237,23 +191,19 @@ public class Alumno extends Miembro {
             for (final String s : testList) {
                 // Si el nombre no parece ser un nombre real...
                 if (!NOMBRE_REGEX.matcher(s).matches()) {
-                    final NoEsUnNombreRealException e = new NoEsUnNombreRealException(s);
-                    // Lanza una excepción
-                    LOGGER.log(Level.SEVERE, "Apellido inválido.", e);
-                    throw e;
+                    throw new NoEsUnNombreRealException(s);
                 }
             }
             m_primerApellido = primerApellido;
-            LOGGER.log(Level.INFO, "El apellido de " + hashCode() + HA_CAMBIADO_EXITOSAMENTE);
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
     @Override
     public void setSegundoApellido(@NonNls @NotNull final String segundoApellido)
             throws NoEsUnNombreRealException, CambioDenegadoException {
-        if (m_sqlID == -1) {
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        } else {
             if (segundoApellido.length() > APELLIDO2_LEN) {
                 throw new CambioDenegadoException("El segundo apellido es demasiado largo.");
             }
@@ -262,34 +212,27 @@ public class Alumno extends Miembro {
                 // Si el nombre no parece ser un nombre real...
                 if (!NOMBRE_REGEX.matcher(s).matches()) {
                     // Lanza una excepción
-                    final NoEsUnNombreRealException e = new NoEsUnNombreRealException(s);
-                    LOGGER.log(Level.SEVERE, "Segundo apellido inválido.", e);
-                    throw e;
+                    throw new NoEsUnNombreRealException(s);
                 }
             }
             m_segundoApellido = segundoApellido;
-            LOGGER.log(Level.INFO,
-                    "El segundo apellido de " + hashCode() + HA_CAMBIADO_EXITOSAMENTE);
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
     @Override
     public void setCorreoUniversidad(@NonNls @NotNull final String correoUniversidad)
             throws NoEsUnCorreoValidoException, CambioDenegadoException {
-        if (m_sqlID == -1) {
-            if (Pattern.compile("\\w{3,4}\\d{5,6}$").matcher(correoUniversidad).matches()) {
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        } else {
+            if (CORREO_ALUMNO_REGEX.matcher(correoUniversidad).matches()) {
                 m_correoUniversidad = correoUniversidad;
             } else {
-                //noinspection HardcodedFileSeparator
                 LOGGER.log(Level.SEVERE,
                         "El nuevo nombre de usuario de correo de la Universidad debe coincidir" +
-                                " con el REGEX \\w{3,4}\\d{5,6}$.");
+                                " con el REGEX " + CORREO_ALUMNO_REGEX + '.');
                 throw new NoEsUnCorreoValidoException(correoUniversidad);
             }
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
@@ -300,8 +243,10 @@ public class Alumno extends Miembro {
             throw new CambioDenegadoException("No se generará un correo si el primer apellido " +
                     "está vacío o si el ID es inválido.");
         }
-        if (m_sqlID == -1) {
-            // En español, nuestro apellidos tienen símbolos raros no permitidos en direcciones
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        } else {
+            // En español, nuestros apellidos tienen símbolos raros no permitidos en direcciones
             // de correo.
             String primerA =
                     Normalizer.normalize(m_primerApellido, Form.NFD).toLowerCase(Locale.ENGLISH);
@@ -311,7 +256,7 @@ public class Alumno extends Miembro {
             final StringBuilder ucorreo = new StringBuilder(7);
         /*
          * En los correos de la U se usan 3 letras si la primera palabra del apellido tiene
-         * más o 3 caracteres. Si tiene menos de 3, entonces se utiliza la siguient palabra
+         * más o 3 caracteres. Si tiene menos de 3, entonces se utiliza la siguiente palabra
          * para ajustar un total de 4 letras.
          */
             for (final String s : split) {
@@ -325,98 +270,112 @@ public class Alumno extends Miembro {
                     break;
                 }
             }
-            if (m_identificador == -1) {
-                throw new CambioDenegadoException(
-                        "No se puede generar un correo de la Universidad para un Alumno cuyo ID" +
-                                " aún no se ha configurado.");
-            }
-            ucorreo.append(String.format("%0" + CORREO_UVG_DIGITOS + "d", m_identificador));
+            ucorreo.append(
+                    String.format(String.format("%%0%dd", CORREO_UVG_DIGITOS), m_identificador));
             setCorreoUniversidad(ucorreo.toString());
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
-    // Ignorar esta inspección porque no hay forma de solucionar el nesting sin quitar los
-    // try-with-resources
-    @SuppressWarnings("OverlyNestedMethod")
     @Override
     public void guardarEnBaseDeDatos(final IAdministrador admin)
             throws SQLException, PermisoDenegadoException, ValorInvalidoException,
             CambioDenegadoException {
-        LOGGER.log(Level.INFO,
-                "A punto de guardar en la base de datos al objeto " + hashCode() + '.');
         if (admin.isAutorizado()) {
-            // Verificar toda la información
-            setIdentificador(m_identificador);
+            guardarEnBaseDeDatos();
+        } else {
+            throw new PermisoDenegadoException(admin);
+        }
+    }
+
+    @Override
+    public boolean isValido() {
+        return m_sqlID >= 1;
+    }
+
+    @Override
+    public void obtenerDesdeBaseDeDatos(final IAdministrador administrador)
+            throws SQLException, ValorInvalidoException, PermisoDenegadoException {
+        if (administrador.isAutorizado()) {
+            obtenerDesdeBaseDeDatos();
+        } else {
+            throw new PermisoDenegadoException(administrador);
+        }
+    }
+
+    @SuppressWarnings({"OverlyLongMethod", "MagicNumber"})
+    @Override
+    void guardarEnBaseDeDatos()
+            throws SQLException, ValorInvalidoException, CambioDenegadoException {
+        // Vamos a crear un objeto Alumno de tara para determinar los cambios
+        try (Miembro tara = new Alumno(m_identificador)) {
+            // Si no se pudo recuperar con el ID, quizás se pueda recuperar con el SQLID
+            if (!tara.isValido()) {
+                tara.m_sqlID = m_sqlID;
+                tara.obtenerDesdeBaseDeDatos();
+            }
             try {
+                // Verificar toda la información
+                setIdentificador(m_identificador);
                 setNombres(m_nombres);
                 setPrimerApellido(m_primerApellido);
                 setSegundoApellido(m_segundoApellido);
                 setCorreo(getCorreoHost(), getCorreoUsuario());
                 setCorreoUniversidad(m_correoUniversidad);
             } catch (final Exception e) {
-                final ValorInvalidoException f = new ValorInvalidoException(
-                        "No se puede guardar en la base de datos si los valores ingresados son " +
+                throw new ValorInvalidoException(
+                        "No se puede guardar en la Base de Datos si los valores ingresados son " +
                                 "inválidos.", e);
-                LOGGER.log(Level.SEVERE,
-                        "El objeto no califica para guardarse en la base de datos.", f);
-                throw f;
             }
-            final String query =
+            final String prepStatement =
                     "INSERT INTO `" + ALUMNOS + "`(`" + ALUMNOS_ID + "`," + '`' + ALUMNOS_NOMBRES +
                             "`,`" + ALUMNOS_APELLIDO1 + "`," + '`' + ALUMNOS_APELLIDO2 + "`,`" +
                             CORREO_USR + "`,`" + CORREO_HOST + "`," + '`' + CORREO_UVG +
-                            "`) VALUES (" + m_identificador + ",'" + m_nombres + "'," + '\'' +
-                            m_primerApellido + "','" + m_segundoApellido + "','" +
-                            getCorreoUsuario() + "'," + '\'' + getCorreoHost() + "','" +
-                            m_correoUniversidad + "') ON DUPLICATE KEY UPDATE " + ALUMNOS_NOMBRES +
-                            "=\'" + m_nombres + "\', " + ALUMNOS_APELLIDO1 + "=\'" +
-                            m_primerApellido + "\', " + ALUMNOS_APELLIDO2 + "=\'" +
-                            m_segundoApellido + "\', " + CORREO_USR + "=\'" + getCorreoUsuario() +
-                            "\', " + CORREO_HOST + "=\'" + getCorreoHost() + "\', " + CORREO_UVG +
-                            "=\'" + m_correoUniversidad + '\'';
-            // Esto de try-with-resources hace que el método suba demasiado niveles de anidamiento
+                            "`) VALUES(?,?,?,?,?,?,?) ON DUPLICATE KEY " + "UPDATE `" +
+                            ALUMNOS_NOMBRES + "`=?," + '`' + ALUMNOS_APELLIDO1 + "`=?,`" +
+                            ALUMNOS_APELLIDO2 + "`=?," + '`' + CORREO_USR + "`=?,`" + CORREO_HOST +
+                            "`=?,`" + CORREO_UVG + "`=?";
             try (final Connection conexion = MariaDBPool.getConexion();
-                 Statement statement = conexion.createStatement();) {
-                statement.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement statement = conexion
+                         .prepareStatement(prepStatement, Statement.RETURN_GENERATED_KEYS)) {
+                // Preparamos los parámetros del Prepared Statement
+                statement.setInt(1, m_identificador);
+                statement.setString(2, m_nombres);
+                statement.setString(3, m_primerApellido);
+                statement.setString(4, m_segundoApellido);
+                statement.setString(5, m_correoUsuario);
+                statement.setString(6, m_correoHost);
+                statement.setString(7, m_correoUniversidad);
+                statement.setString(8, m_nombres);
+                statement.setString(9, m_primerApellido);
+                statement.setString(10, m_segundoApellido);
+                statement.setString(11, m_correoUsuario);
+                statement.setString(12, m_correoHost);
+                statement.setString(13, m_correoUniversidad);
+                statement.executeUpdate();
                 try (ResultSet rs = statement.getGeneratedKeys()) {
                     if (rs.next()) {
                         final int genID = rs.getInt(1);
                         if (genID == 0) {
-                            LOGGER.log(Level.WARNING, EL_OBJETO + hashCode() +
-                                    " no ha ni modificado ni ingresado un objeto en la base " +
-                                    "de datos. Esto puede deberse a que el objeto ya existe, " +
-                                    "o bien el cambio realizado no está permitido.");
-                            // Vamos a obviar este try-with-resources para evitar más anidamiento
-                            //noinspection resource
-                            final Miembro tara = new Alumno(m_identificador);
-                            if (!tara.isValido()) {
-                                tara.m_sqlID = m_sqlID;
-                                tara.obtenerDesdeBaseDeDatos();
-                            }
+                            LOGGER.log(Level.WARNING,
+                                    "No se ha ingresado ni modificado ningún Alumno en la base " +
+                                            "de datos.");
                             /*
-                             * Esta parte del código es importante: su función es determinar si
-                             * el código ha fallado porque la base de datos ha denegado el cambio
-                             * o bien si ha fallado porque el objeto ya está ahí.
-                             *
-                             * Si el objeto está idéntico en la base de datos, no hay problema.
-                             * Sin embargo, si los objetos difieren quiere decir que el cambio ha
-                             * sido denegado por cualquier motivo por la base de datos y que el
-                             * nuevo objeto cambiado es inválido.
-                             *
-                             * Para logarlo se utiliza un objeto de tara, al cual se le
-                             * coonfigura el ID de este objeto y se recupera de la base de datos.
+                             Esta parte del código es importante: su función es determinar si
+                             el código ha fallado porque la Base de Datos ha denegado el
+                             cambio o bien si ha fallado porque el objeto ya está ahí. Si el
+                             objeto está idéntico en la Base de Datos, no hay problema. Sin
+                             embargo, si los objetos difieren quiere decir que el cambio ha sido
+                             denegado por cualquier motivo por la Base de Datos y que el nuevo
+                             objeto cambiado es inválido. Para logarlo se utiliza un objeto de
+                             tara, al cual se le coonfigura el ID de este objeto y se recupera de
+                             la Base de Datos.
                              */
                             if (tara.equals(this)) {
-                                LOGGER.log(Level.WARNING, EL_OBJETO + hashCode() +
-                                        " es idéntico al de la base de datos.");
+                                LOGGER.log(Level.WARNING, "Este Alumno es indéntico al de la base" +
+                                        " de datos. Ningún cambio efectuado.");
                             } else {
                                 final CambioDenegadoException e = new CambioDenegadoException(
-                                        "La base de datos ha rechazado el cambio.");
-                                LOGGER.log(Level.SEVERE, EL_OBJETO + hashCode() +
-                                        " intenta cambiar información que no está permitida " +
-                                        "cambiar. El objeto se invalidará.", e);
+                                        "La Base de Datos ha rechazado el cambio.");
                                 invalidar();
                                 throw e;
                             }
@@ -427,14 +386,64 @@ public class Alumno extends Miembro {
                     }
                 }
             }
-        } else {
-            throw new PermisoDenegadoException(admin);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "No se pudo instanciar un Alumno. Este puede ser un bug muy" +
+                    " oscuro y extraño.");
+            assert false;
         }
     }
 
     @Override
-    public boolean isValido() {
-        return m_sqlID >= 1;
+    protected void validar(final int sqlID) {
+        if (sqlID >= 1) {
+            m_sqlID = sqlID;
+            MAPA_VALIDOS_MULTITON.put(m_identificador, this);
+            LOGGER.log(Level.INFO, "Se ha agregado " + hashCode() + " al multitón.");
+        }
+    }
+
+    @Override
+    void obtenerDesdeBaseDeDatos() throws ValorInvalidoException {
+        if ((m_sqlID <= 0) && (m_identificador <= 0)) {
+            return;
+        }
+        // Si el objeto está validado usar el SQLID, si no, usar el ID
+        final String query = "SELECT * FROM `" + ALUMNOS + "` WHERE " +
+                (isValido() ? ALUMNOS_SQLID : ALUMNOS_ID) + "=?";
+        try (final Connection conexion = MariaDBPool.getConexion();
+             PreparedStatement statement = conexion.prepareStatement(query)) {
+            statement.setInt(1, isValido() ? m_sqlID : m_identificador);
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    // En teoría cualquier información en la Base de Datos es válida.
+                    invalidar();
+                    setNombres(result.getString(ALUMNOS_NOMBRES));
+                    setPrimerApellido(result.getString(ALUMNOS_APELLIDO1));
+                    setSegundoApellido(result.getString(ALUMNOS_APELLIDO2));
+                    setCorreo(result.getString(CORREO_HOST), result.getString(CORREO_USR));
+                    setCorreoUniversidad(result.getString(CORREO_UVG));
+                    setIdentificador(result.getInt(ALUMNOS_ID));
+                    m_clave = result.getBytes(CLAVE);
+                    validar(result.getInt(ALUMNOS_SQLID));
+                } else {
+                    LOGGER.log(Level.WARNING, "No se ha encontrado el Alumno en la Base de Datos." +
+                            " Verifique que el Alumno exista.");
+
+                }
+            }
+        } catch (final NoEsUnNombreRealException e) {
+            throw new ValorInvalidoException(
+                    "El nombre recuperado de la Base de Datos es inválido.", e);
+        } catch (final NoEsUnCorreoValidoException e) {
+            throw new ValorInvalidoException(
+                    "El correo recuperado de la Base de Datos es inválido.", e);
+        } catch (final CambioDenegadoException e) {
+            throw new ValorInvalidoException(
+                    "Se ha rechazado el cambio de valores para este objeto.", e);
+        } catch (final SQLException e) {
+            // Invalidar el objeto y borrar la clave actual
+            invalidar();
+        }
     }
 
     /**
@@ -446,7 +455,7 @@ public class Alumno extends Miembro {
      *
      * @return una instancia del Alumno
      */
-    public static Alumno getAlumnoById(final int id) {
+    public static IMiembro getAlumnoById(final int id) {
         if (MAPA_VALIDOS_MULTITON.containsKey(id)) {
             final Alumno tmp = MAPA_VALIDOS_MULTITON.get(id);
             tmp.m_referencias += 1;
@@ -454,8 +463,7 @@ public class Alumno extends Miembro {
             return tmp;
         } else {
             final Alumno tmp = new Alumno(id);
-            LOGGER.log(Level.INFO, "Instanciando un nuevo objeto para " + id);
-
+            LOGGER.log(Level.INFO, "Instanciado un nuevo Alumno para " + id);
             return tmp;
         }
     }
@@ -467,10 +475,8 @@ public class Alumno extends Miembro {
                 m_referencias -= 1;
             }
             if (m_referencias <= 0) {
-                LOGGER.log(Level.WARNING,
-                        "El número de referencias para " + hashCode() + " es " + m_referencias +
-                                ", que es menor o igual a cero. Esto es posiblemente un error de " +
-                                "implementación.");
+                LOGGER.log(Level.WARNING, "BUG: Llamada ilegal a close() en Alumno");
+                assert false;
             }
         }
     }
