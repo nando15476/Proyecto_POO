@@ -23,15 +23,13 @@ class Principal {
         } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "No se puede cargar la clase.", e);
         }
-        try (IMiembro x = Alumno.getAlumnoById(3232);
-             final IMiembro y = Alumno.getAlumnoById(54043)) {
+        try (IMiembro x = Alumno.getAlumnoById(554);
+             final IMiembro y = Alumno.getAlumnoById(3232)) {
             x.invalidar(new Administrador());
-            x.setIdentificador(43243);
+            x.setIdentificador(3344);
             System.out.println(x.toString());
-            System.out.println(y.toString());
             x.guardarEnBaseDeDatos(new Administrador());
             System.out.println(x.toString());
-            System.out.println(y.toString());
         } catch (final Exception e) {
             System.out.println("¡EXCEPCIÓN!");
             e.printStackTrace(System.out);
