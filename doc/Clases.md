@@ -9,8 +9,8 @@ accesorias (como las de acceso a los datos y el controlador de bases de datos).
 
 ## Modelo
 En la siguiente clase se describen los modelos en los que radica el funcionamiento del
-sistema (y están implementados en las tablas de la base de datos). Las relaciones tienen
-como eje central la clase Curso y la tabla Curso en la base de datos. Esto es porque Curso
+sistema (y están implementados en las tablas de la Base de Datos). Las relaciones tienen
+como eje central la clase Curso y la tabla Curso en la Base de Datos. Esto es porque Curso
 es con lo que interactúan todos los herederos de Miembro.
 
 ### Clase Miembro (Abstracta)
@@ -21,7 +21,7 @@ Catedratico.
 
 * Constructor
 	* `Miembro(String nombre, String apellido, int id)`: El constructor se utiliza
-solamente para crear nuevos miembros manualmente y para recuperarlos de la base de datos,
+solamente para crear nuevos miembros manualmente y para recuperarlos de la Base de Datos,
 dado que la clase Miembro *es inmutable*.
 * Atributos
 	* `id: int`, identificador único tiene cualquier miembro de la universidad. En Alumno
@@ -34,11 +34,11 @@ Catedráticos, por lo que no puede incluirse en una clase genérica.
 	* `contraseniaSha: String`, un String que es el SHA256 de la  contraseña guardada
 durante el proceso de registro.
 	* `sqlId: long`, un número que corresponde a un valor generado automáticamente por la
-base de datos y, junto con el `id` permite evitar cambios no autorizados.
+Base de Datos y, junto con el `id` permite evitar cambios no autorizados.
     * `Token token`, un Token que determina la autorización del Miembro.
 * Métodos
 	* `cambiarMailPersonal(@NotNull String mail)`, verifica el correo electrónico y una
-vez verificado, cambia el correo en la base de datos y en el objeto.
+vez verificado, cambia el correo en la Base de Datos y en el objeto.
 	* `cambiarContasenia(String actual, @NotNull String shaNueva, @Nullable String
 pista)`, cambia la contraseña actual del usuario a una nueva. El parámetro `actual` es la
 contraseña en texto plano, esto es porque no se confía en terceras partes para calcular el
@@ -53,7 +53,7 @@ como por ejemplo, la lista de cursos asignados.
 
 * Constructor
 	* `Alumno(String nombre, String apellido, int id)`: El constructor se utiliza
-solamente para crear nuevos alumno manualmente y para recuperarlos de la base de datos,
+solamente para crear nuevos alumno manualmente y para recuperarlos de la Base de Datos,
 dado que la clase Miembro *es inmutable*.
 * Atributos
 	* Heredados de Miembro
@@ -122,7 +122,7 @@ datos, dado que la clase Miembro *es inmutable*.
 Catedratico.
 
 ### Clase Curso
-Esta clase contiene un Curso particular. La relación de la base de datos entre Curso y
+Esta clase contiene un Curso particular. La relación de la Base de Datos entre Curso y
 Alumno es de muchos a muchos: un alumno puede asignarse cero, uno o más cursos media vez
 el Curso no sea el mismo. Un curso se define como "el mismo" si su código único es el
 mismo y la sección es la misma o diferente. Lo mismo aplica para la relación Curso y
@@ -141,12 +141,12 @@ la sección específica.
     * `Catedratico catedratico`, el Catedrático que imparte el curso.
     * `Tutor[] tutores`, una lista con todos los tutores disponibles para este Curso. En
 el caso particular de Tutores, no se hace distinción por sección, mas esto lo maneja la
-base de datos.
+Base de Datos.
     * `Auxiliar[] auxiliares`, una lista con los auxiliares del curso de esa sección.
     * `nombre: String`, nombre del curso.
     * `uId: String`, identificador único del curso de la Universidad.
-    * `sqlId: long`, identificador único en la base de datos.
-La mayoría de métodos son para administración de la base de datos por parte del
+    * `sqlId: long`, identificador único en la Base de Datos.
+La mayoría de métodos son para administración de la Base de Datos por parte del
 Administrador.
 * Métodos
     * `agregarAlumno(Administrador auth, Alumno alumno)`, teniendo un Administrador
@@ -161,18 +161,18 @@ autorizando, permite agregar un Auxilar al Curso.
 autorizando, permite remover un Auxilar al Curso.
     * `<<estático>> agregarEnBaseDeDatos(Administrador auth, Curso curso)`, agrega un
 nuevo
-curso a la base de datos.
+curso a la Base de Datos.
     * `<<estático>> removerDeBaseDeDatos(Administrador auth, Curso curso)`, remueve un
 curso
-a la base de datos.
+a la Base de Datos.
     * `<<estático>> getDesdeBaseDeDatos(Administrador auth, String uid, int seccion):
-Curso`, recupera un Curso desde la base de datos.
+Curso`, recupera un Curso desde la Base de Datos.
 
 ### Clase Administrador (hereda de Miembro)
 La clase Administrador es una clase PHONY, se usa para determinar el rol del
 Administrador. Cualquier Miembro puede solicitar un cambio en información sensible, sin
 embargo, este cambio no se realizará hasta que un Administrador autorizado lo haga
-efectivo. El Administrador está almacenado en la base de datos, pero no es un Miembro.
+efectivo. El Administrador está almacenado en la Base de Datos, pero no es un Miembro.
 Pueden existir más de un Administrador, cada uno con su UID y su contraseña HASH. Si bien
 Administrador hereda de Miembro, tiene ciertas diferencias fundamentales.
 

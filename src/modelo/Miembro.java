@@ -8,7 +8,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 import controlador.IAdministrador;
@@ -34,19 +33,14 @@ import excepciones.ValorInvalidoException;
  * modificar), pero media vez se valide el objeto en la Base de Datos, el objeto será inmutable.</p>
  */
 public abstract class Miembro implements IMiembro {
-    public static final int CORREO_UVG_DIGITOS = 5;
     /**
      * Clave vacía usada para invalidar la clave anterior.
      */
-    protected static final byte[] CLAVE_NOOP = new byte[0];
-    @SuppressWarnings("JavaDoc")
-    static final String YA_VALIDADO_MSG = "No se puede cambiar ningun campo de un objeto validado.";
-    /** 'SELECT FROM ' */
-    @NonNls
-    static final String SELECT_FROM = "SELECT * FROM ";
-    /** El nombre de host de la Universidad (al cual pertenecen todos los correos de la U). */
-    @NonNls
-    static final String UNIVERSIDAD_HOST = "uvg.edu.gt";
+    static final byte[] CLAVE_NOOP = new byte[0];
+    /**
+     * El número estándar de dígitos para generar el nombre de correo de la Universidad.
+     */
+    static final int CORREO_UVG_DIGITOS = 5;
     /**
      * Con este REGEX se verifican la validez de los nombres de las personas. Un nombre de persona
      * puede contener cualquier caracter en cualquier idioma. Sin embargo, la primera letra debe ser
@@ -57,6 +51,11 @@ public abstract class Miembro implements IMiembro {
     static final Pattern NOMBRE_REGEX = Pattern.compile("(\\p{Lu}\\p{L}*\\.?)$");
     /** Encuentra todos los aciertos de caracteres UNICODE. */
     static final Pattern UNICODE_MATCHER = Pattern.compile("\\p{M}");
+    /**
+     * El mensaje de la excepción cuando el cambio se niega porque el Miembro está validado.
+     */
+    static final String YA_VALIDADO_MSG =
+            "No se puede cambiar ningún valor de un Miembro validado. Primero invalide el Miembro.";
     private final EmailValidator m_emailValidator;
     private final MessageDigest m_messageDigest;
     /** Un {@code array} de 64 posiciones que representa el SHA-512 de la contraseña de usuario. */
@@ -78,13 +77,16 @@ public abstract class Miembro implements IMiembro {
     int m_sqlID = -1;
     /** Nombre de usuario del correo electrónico personal (lo que va antes de la arroba). */
     @Nullable
-    private transient String m_correoUsuario;
+    transient String m_correoUsuario;
     /** Host del correo electrónico personal (por ejemplo, gmail.com, yahoo.com, etc.). */
     @Nullable
-    private transient String m_correoHost;
+    transient String m_correoHost;
+    /** El nombre de host de la Universidad (al cual pertenecen todos los correos de la U). */
+    @NonNls
+    String UNIVERSIDAD_HOST = "uvg.edu.gt";
 
     /** Genera un nuevo Miembro desde las clases herederas. */
-    protected Miembro() {
+    Miembro() {
         m_emailValidator = EmailValidator.getInstance();
         try {
             m_messageDigest = MessageDigest.getInstance("SHA-512");
@@ -105,11 +107,14 @@ public abstract class Miembro implements IMiembro {
 
     @Override
     public void setIdentificador(final int identificador) throws CambioDenegadoException {
-        if ((m_sqlID == -1) && (identificador > 0)) {
-            m_identificador = identificador;
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         } else {
-            throw new CambioDenegadoException("No se puede cambiar el ID a " + identificador +
-                    ". O bien el ID es inválido o el Miembro ya está validado.");
+            if (identificador > 0) {
+                m_identificador = identificador;
+            } else {
+                throw new CambioDenegadoException("No se permite un identificador negativo o 0.");
+            }
         }
     }
 
@@ -145,7 +150,9 @@ public abstract class Miembro implements IMiembro {
                 correoUsuario.isEmpty()) {
             return;
         }
-        if (m_sqlID == -1) {
+        if (isValido()) {
+            throw new CambioDenegadoException(YA_VALIDADO_MSG);
+        } else {
             //noinspection MagicCharacter
             final String mail = correoUsuario + '@' + correoHost;
             if (m_emailValidator.isValid(mail)) {
@@ -154,8 +161,6 @@ public abstract class Miembro implements IMiembro {
             } else {
                 throw new NoEsUnCorreoValidoException(mail);
             }
-        } else {
-            throw new CambioDenegadoException(YA_VALIDADO_MSG);
         }
     }
 
@@ -168,69 +173,75 @@ public abstract class Miembro implements IMiembro {
     @Override
     @Nullable
     public String getCorreoUniversidad() {
-        //noinspection MagicCharacter
         return m_correoUniversidad;
     }
 
-    /**
-     * Recuepera el objeto acutal desde la Base de Datos, y una vez recuperado de la base de datos,
-     * el objeto se valida. La información previamente configurada en la instancia podría o no
-     * cambiar para coincidir con la Base de Datos de acuerdo a las siguientes condiciones:
-     * <p>
-     * <ul> <li>Si el ID de SQL es distinto de {@code -1}, es decir el objeto <b>está</b> validado,
-     * entonces toda la información se actualiza desde la Base de Datos, incluyendo el identificador
-     * de la Universidad.</li> <li>Si el ID de SQL es {@code -1}, es decir el objeto <b>no está</b>
-     * validado, entonces toda la información se actualiza desde la Base de Datos, incluyendo el
-     * ID de SQL.</li> </ul>
-     *
-     * @throws SQLException           si las peticiones SQL fallan
-     * @throws ValorInvalidoException si algún valor de la Base de Datos es inválido
-     */
-    protected abstract void obtenerDesdeBaseDeDatos() throws SQLException, ValorInvalidoException;
-
-    public void invalidar(IAdministrador admin) {
+    @Override
+    public void invalidar(final IAdministrador admin) {
         if (admin.isAutorizado()) {
             invalidar();
         }
     }
 
+    /**
+     * Invalida cualquier heredero de Miembro. Uso exclusivo para transacciones internas.
+     */
     protected abstract void invalidar();
 
+    /**
+     * Guardar en Basse de Datos para uso interno.
+     *
+     * @throws SQLException            cuando la petición SQL falla
+     * @throws ValorInvalidoException  cuando cualquier valor del Miembro a guardar es inválido
+     * @throws CambioDenegadoException cuando la Base de Datos rechaza el cambio realizado
+     */
+    abstract void guardarEnBaseDeDatos()
+            throws SQLException, ValorInvalidoException, CambioDenegadoException;
+
+    /**
+     * Valida cualquier heredero de Miembro. Uso exclusivo para transacciones internas.
+     *
+     * @param sqlID el nuevo ID del Miembro
+     */
+    protected abstract void validar(final int sqlID);
+
+    /**
+     * Obtiene en Basse de Datos para uso interno.
+     *
+     * @throws ValorInvalidoException cuando cualquier valor del Miembro recuperado es inválido Esto
+     *                                implica un grave error pues la única fomrma de solucionarlo es
+     *                                corregir la Base de Datos
+     */
+    abstract void obtenerDesdeBaseDeDatos() throws ValorInvalidoException;
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
-        // Las dos claves principales deberían ser suficientes
-        int hash = 1;
-        hash += m_sqlID;
-        hash += m_identificador;
-        // Pero no lo son
-        hash += ((m_correoUsuario != null) ? m_correoUsuario.hashCode() : 0) +
-                ((m_correoHost != null) ? m_correoHost.hashCode() : 0);
-        // No hace falta verificar CorreoU porque viene de  Nombre e Identificador
-        hash += ((m_nombres != null) ? m_nombres.hashCode() : 0);
-        // Muestra el ID en la "cola" del hash
-        hash -= hash % 100000;
-        hash += (hash < 0) ? -m_identificador : m_identificador;
-        return hash;
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result) + m_identificador;
+        result = (prime * result) + m_sqlID;
+        return result;
     }
 
-    @SuppressWarnings("OverlyComplexBooleanExpression")
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
     @Override
-    public boolean equals(final Object o) {
-        final Miembro aComparar;
-        // Vamos a sobreescribir Equals para fines de comparación en Alumno
-        if (getClass().isAssignableFrom(o.getClass())) {
-            aComparar = ((Miembro) o);
-        } else {
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
             return false;
         }
-        return (aComparar.m_sqlID == m_sqlID) && (aComparar.m_identificador == m_identificador) &&
-                Objects.equals(aComparar.m_nombres, m_nombres) &&
-                Objects.equals(aComparar.m_primerApellido, m_primerApellido) &&
-                Objects.equals(aComparar.m_segundoApellido, m_segundoApellido) &&
-                Objects.equals(aComparar.m_correoUsuario, m_correoUsuario) &&
-                Objects.equals(aComparar.m_correoHost, m_correoHost) &&
-                Arrays.equals(aComparar.m_clave, m_clave) &&
-                Objects.equals(aComparar.m_correoUniversidad, m_correoUniversidad);
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Miembro other = (Miembro) obj;
+        return (m_identificador == other.m_identificador) && (m_sqlID == other.m_sqlID);
     }
 
     @Override

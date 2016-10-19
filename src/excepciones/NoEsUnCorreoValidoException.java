@@ -2,7 +2,7 @@ package excepciones;
 
 /**
  * Excepción que se lanza cuando el {@link org.apache.commons.validator.routines.EmailValidator}
- * determina que el correo electrónico provisto no es válido.
+ * o cualquier otro mecanismo determina que el correo electrónico provisto no es válido.
  */
 public class NoEsUnCorreoValidoException extends Exception {
     /**

@@ -22,6 +22,7 @@ import modelo.Miembro;
  * creación arbitraria de objetos {@link Miembro} y sus herederos Multitones.
  */
 public interface IMiembro extends AutoCloseable {
+
     /**
      * Devuelve el índice del {@link Miembro} en su respectiva tabla en la Base de Datos.
      * Este índice determina la validez del {@link Miembro}.
@@ -56,6 +57,7 @@ public interface IMiembro extends AutoCloseable {
      * @return los nombres del {@link Miembro}
      */
     @Nullable
+    @NonNls
     String getNombres();
 
     /**
@@ -76,6 +78,7 @@ public interface IMiembro extends AutoCloseable {
      * @return el primer apellido del {@link Miembro}
      */
     @Nullable
+    @NonNls
     String getPrimerApellido();
 
     /**
@@ -96,6 +99,7 @@ public interface IMiembro extends AutoCloseable {
      * @return el segundo apellido del {@link Miembro}
      */
     @Nullable
+    @NonNls
     String getSegundoApellido();
 
     /**
@@ -116,6 +120,7 @@ public interface IMiembro extends AutoCloseable {
      * @return el host de correo electrónico
      */
     @Nullable
+    @NonNls
     String getCorreoHost();
 
     /**
@@ -140,6 +145,7 @@ public interface IMiembro extends AutoCloseable {
      * @return el nombre de usuario de correo
      */
     @Nullable
+    @NonNls
     String getCorreoUsuario();
 
     /**
@@ -149,6 +155,7 @@ public interface IMiembro extends AutoCloseable {
      * @return el nombre de usuario de correo
      */
     @Nullable
+    @NonNls
     String getCorreoUniversidad();
 
     /**
@@ -176,20 +183,53 @@ public interface IMiembro extends AutoCloseable {
 
     /**
      * Guarda el objeto acutal en la Base de Datos, y una vez almacenado en la base de
-     * datos, el objeto se sincroniza de nuevo con la base de datos, es decir, se valida.
+     * datos, el objeto se sincroniza de nuevo con la Base de Datos, es decir, se valida.
      *
-     * @param admin Un {@link IAdministrador} con autoriadad para modificar la base de datos
+     * @param admin Un {@link IAdministrador} con autoriadad para modificar la Base de Datos
      *
      * @throws SQLException             cuando la petición SQL falla
      * @throws PermisoDenegadoException cuando el {@link IAdministrador} no tiene atoridad para
      *                                  realizar la acción
-     * @throws ValorInvalidoException   cuando cualquier valor del Miembro recuperado es inválido.
-     *                                  Esto implica un grave error pues la única fomrma de
-     *                                  solucionarlo es corregir la base de datos
+     * @throws ValorInvalidoException   cuando cualquier valor del Miembro a guardar es inválido
+     * @throws CambioDenegadoException  cuando la Base de Datos rechaza el cambio realizado
      */
     void guardarEnBaseDeDatos(final IAdministrador admin)
             throws SQLException, PermisoDenegadoException, ValorInvalidoException,
             CambioDenegadoException;
 
+    /**
+     * Devuelve {@code true} si el {@link Miembro} está validado o {@code false} si no lo está.
+     *
+     * @return el estado de validación.
+     */
     boolean isValido();
+
+    /**
+     * Recuepera el objeto acutal desde la Base de Datos, y una vez recuperado de la Base de Datos,
+     * el objeto se valida. La información previamente configurada en la instancia podría o no
+     * cambiar para coincidir con la Base de Datos de acuerdo a las siguientes condiciones:
+     * <ul> <li>Si el ID de SQL es distinto de {@code -1}, es decir el objeto <b>está</b> validado,
+     * entonces toda la información se actualiza desde la Base de Datos, incluyendo el identificador
+     * de la Universidad.</li> <li>Si el ID de SQL es {@code -1}, es decir el objeto <b>no está</b>
+     * validado, entonces toda la información se actualiza desde la Base de Datos, incluyendo el
+     * ID de SQL.</li> </ul>
+     *
+     * @param administrador el {@link IAdministrador} con atoridad.
+     *
+     * @throws SQLException             si las peticiones SQL fallan
+     * @throws ValorInvalidoException   si algún valor de la Base de Datos es inválido
+     * @throws PermisoDenegadoException si el {@link IAdministrador} no tiene permisos para
+     *                                  acceder.
+     */
+    void obtenerDesdeBaseDeDatos(final IAdministrador administrador)
+            throws SQLException, ValorInvalidoException, PermisoDenegadoException;
+
+    /**
+     * Utiliza una autoridad {@link IAdministrador} para invalidar el Miembro actual. Cuando un
+     * Miembro se invalida se vuelve mutable, pero además se desasocia cualquier {@link Token} y se
+     * cierra cualquier sesión y se elimina del multitón.
+     *
+     * @param admin el {@link IAdministrador} con autoridad.
+     */
+    void invalidar(IAdministrador admin);
 }
