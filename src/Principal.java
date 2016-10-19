@@ -31,7 +31,7 @@ class Principal {
             x.guardarEnBaseDeDatos(new Administrador());
             System.out.println(x.toString());
         } catch (final Exception e) {
-            System.out.println("¡EXCEPCIÓN!");
+            System.out.println("¡¡EXCEPCIÓN!!");
             e.printStackTrace(System.out);
         }
     }
